@@ -1,0 +1,2 @@
+include versioneer.py
+include orthax/_version.py
