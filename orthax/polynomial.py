@@ -288,8 +288,8 @@ def polysub(c1, c2):
     return pu._sub(c1, c2)
 
 
-@jit
-def polymulx(c):
+@functools.partial(jit, static_argnames="mode")
+def polymulx(c, mode="full"):
     """Multiply a polynomial by x.
 
     Multiply the polynomial `c` by x, where x is the independent
@@ -301,6 +301,10 @@ def polymulx(c):
     c : array_like
         1-D array of polynomial coefficients ordered from low to
         high.
+    mode : {"full", "same"}
+        If "full", output has shape (len(c) + 1). If "same", output has shape
+        (len(c)), possibly truncating high order modes.
+
 
     Returns
     -------
@@ -315,6 +319,8 @@ def polymulx(c):
     c = pu.as_series(c)
     prd = jnp.zeros(len(c) + 1, dtype=c.dtype)
     prd = prd.at[1:].set(c)
+    if mode == "same":
+        prd = prd[: len(c)]
     return prd
 
 
@@ -400,7 +406,7 @@ def polydiv(c1, c2):
 
 
 @functools.partial(jit, static_argnames=("pow", "maxpower"))
-def polypow(c, pow, maxpower=None):
+def polypow(c, pow, maxpower=16):
     """Raise a polynomial to a power.
 
     Returns the polynomial `c` raised to the power `pow`. The argument
