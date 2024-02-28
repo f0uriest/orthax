@@ -101,12 +101,12 @@ class TestArithmetic:
         for i in range(5):
             for j in range(5):
                 msg = f"At i={i}, j={j}"
-                ci = [0] * i + [1, 2]
-                cj = [0] * j + [1, 2]
+                ci = [0.0] * i + [1.0, 2.0]
+                cj = [0.0] * j + [1.0, 2.0]
                 tgt = poly.polyadd(ci, cj)
                 quo, rem = poly.polydiv(tgt, ci)
                 res = poly.polyadd(poly.polymul(quo, ci), rem)
-                assert_array_equal(res, tgt, err_msg=msg)
+                assert_array_equal(trim(res), trim(tgt), err_msg=msg)
 
     def test_polypow(self):
         for i in range(5):

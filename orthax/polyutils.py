@@ -523,13 +523,29 @@ def _div(mul_f, c1, c2):
     elif lc2 == 1:
         return c1 / c2[-1], jnp.zeros_like(c1[:1])
     else:
-        quo = jnp.empty(lc1 - lc2 + 1, dtype=c1.dtype)
+
+        def _ldordidx(x):  # index of highest order nonzero term
+            return len(x) - 1 - jnp.nonzero(x[::-1], size=1)[0][0]
+
+        quo = jnp.zeros(lc1 - lc2 + 1, dtype=c1.dtype)
         rem = c1
-        for i in range(lc1 - lc2, -1, -1):
-            p = mul_f([0] * i + [1], c2)
-            q = rem[-1] / p[-1]
-            rem = rem[:-1] - q * p[:-1]
-            quo = quo.at[i].set(q)
+        ridx = len(rem) - 1
+        sz = lc1 - _ldordidx(c2) - 1
+        y = jnp.zeros(lc1 + lc2 + 1, dtype=c1.dtype).at[sz].set(1.0)
+
+        def body(k, val):
+            quo, rem, y, ridx = val
+            i = sz - k
+            p = mul_f(y, c2)
+            pidx = _ldordidx(p)
+            t = rem[ridx] / p[pidx]
+            rem = _sub(rem.at[ridx].set(0), t * p.at[pidx].set(0))[: len(rem)]
+            quo = quo.at[i].set(t)
+            ridx -= 1
+            y = jnp.roll(y, -1)
+            return quo, rem, y, ridx
+
+        quo, rem, _, _ = jax.lax.fori_loop(0, sz, body, (quo, rem, y, ridx))
         return quo, rem
 
 
