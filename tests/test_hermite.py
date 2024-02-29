@@ -314,6 +314,7 @@ class TestDerivative:
     def test_hermder(self):
         # check exceptions
         assert_raises(TypeError, herm.hermder, [0], 0.5)
+        assert_raises(ValueError, herm.hermder, [0], -1)
 
         # check that zeroth derivative does nothing
         for i in range(5):

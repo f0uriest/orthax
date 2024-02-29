@@ -1,7 +1,6 @@
 """Hermite Series, "Physicists".
 
-This module provides a number of functions useful for
-dealing with Hermite series.
+This module provides a number of functions useful for dealing with Hermite series.
 
 Constants
 ---------
@@ -135,16 +134,20 @@ def poly2herm(pol):
     """
     pol = pu.as_series(pol)
     deg = len(pol) - 1
-    res = 0
-    for i in range(deg, -1, -1):
-        res = hermadd(hermmulx(res), pol[i])
+    res = jnp.zeros_like(pol)
+
+    def body(i, res):
+        k = deg - i
+        res = hermadd(hermmulx(res, mode="same"), pol[k])
+        return res
+
+    res = jax.lax.fori_loop(0, deg + 1, body, res)
     return res
 
 
 @jit
 def herm2poly(c):
-    """
-    Convert a Hermite series to a polynomial.
+    """Convert a Hermite series to a polynomial.
 
     Convert an array representing the coefficients of a Hermite series,
     ordered from lowest degree to highest, to an array of the coefficients
@@ -469,7 +472,6 @@ def hermmul(c1, c2, mode="full"):
         If "full", output has shape (len(c1) + len(c2) - 1). If "same", output has shape
         max(len(c1), len(c2)), possibly truncating high order modes.
 
-
     Returns
     -------
     out : ndarray
@@ -671,6 +673,9 @@ def hermder(c, m=1, scl=1, axis=0):
     array([1., 2., 3.])
 
     """
+    if m < 0:
+        raise ValueError("The order of derivation must be non-negative")
+
     c = pu.as_series(c)
 
     if m == 0:
@@ -1145,7 +1150,8 @@ def hermvander(x, deg):
 
     x = jnp.array(x, ndmin=1)
     dims = (deg + 1,) + x.shape
-    dtyp = x.dtype
+    dtyp = jnp.promote_types(x.dtype, jnp.array(0.0).dtype)
+    x = x.astype(dtyp)
     v = jnp.empty(dims, dtype=dtyp)
     v = v.at[0].set(jnp.ones_like(x))
     if deg > 0:
@@ -1575,7 +1581,7 @@ def hermgauss(deg):
 
     # first approximation of roots. We use the fact that the companion
     # matrix is symmetric in this case in order to obtain better zeros.
-    c = jnp.array([0] * deg + [1])
+    c = jnp.zeros(deg + 1).at[-1].set(1)
     m = hermcompanion(c)
     x = jnp.linalg.eigvalsh(m)
 
