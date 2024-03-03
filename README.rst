@@ -29,8 +29,8 @@ orthax is installable with ``pip``:
     :target: https://github.com/f0uriest/orthax/blob/master/LICENSE
     :alt: License
 
-.. |DOI| image:: https://zenodo.org/badge/709132830.svg
-    :target: https://zenodo.org/doi/10.5281/zenodo.10035983
+.. |DOI| image:: https://zenodo.org/badge/763821973.svg
+    :target: https://zenodo.org/doi/10.5281/zenodo.10774399
     :alt: DOI
 
 .. |Docs| image:: https://img.shields.io/readthedocs/orthax?logo=Read-the-Docs
