@@ -1,4 +1,7 @@
-"""Hermite Series, "Physicists".
+"""
+============================
+Hermite Series, "Physicists"
+============================
 
 This module provides a number of functions useful for dealing with Hermite series.
 
@@ -127,7 +130,7 @@ def poly2herm(pol):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import poly2herm
+    >>> from orthax.hermite import poly2herm
     >>> poly2herm(np.arange(4))
     array([1.   ,  2.75 ,  0.5  ,  0.375])
 
@@ -178,7 +181,7 @@ def herm2poly(c):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import herm2poly
+    >>> from orthax.hermite import herm2poly
     >>> herm2poly([ 1.   ,  2.75 ,  0.5  ,  0.375])
     array([0., 1., 2., 3.])
 
@@ -210,17 +213,17 @@ def herm2poly(c):
         return polyadd(c0, polymulx(c1, "same") * 2)
 
 
-# Hermite domain
 hermdomain = jnp.array([-1, 1])
+"""Hermite domain."""
 
-# Hermite coefficients representing zero.
 hermzero = jnp.array([0])
+"""Hermite coefficients representing zero."""
 
-# Hermite coefficients representing one.
 hermone = jnp.array([1])
+"""Hermite coefficients representing one."""
 
-# Hermite coefficients representing the identity x.
 hermx = jnp.array([0, 1 / 2])
+"""Hermite coefficients representing the identity x."""
 
 
 @jit
@@ -240,15 +243,15 @@ def hermline(off, scl):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyline
-    numpy.polynomial.chebyshev.chebline
-    numpy.polynomial.legendre.legline
-    numpy.polynomial.laguerre.lagline
-    numpy.polynomial.hermite_e.hermeline
+    orthax.polynomial.polyline
+    orthax.chebyshev.chebline
+    orthax.legendre.legline
+    orthax.laguerre.lagline
+    orthax.hermite_e.hermeline
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermline, hermval
+    >>> from orthax.hermite import hermline, hermval
     >>> hermval(0,hermline(3, 2))
     3.0
     >>> hermval(1,hermline(3, 2))
@@ -295,15 +298,15 @@ def hermfromroots(roots):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyfromroots
-    numpy.polynomial.legendre.legfromroots
-    numpy.polynomial.laguerre.lagfromroots
-    numpy.polynomial.chebyshev.chebfromroots
-    numpy.polynomial.hermite_e.hermefromroots
+    orthax.polynomial.polyfromroots
+    orthax.legendre.legfromroots
+    orthax.laguerre.lagfromroots
+    orthax.chebyshev.chebfromroots
+    orthax.hermite_e.hermefromroots
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermfromroots, hermval
+    >>> from orthax.hermite import hermfromroots, hermval
     >>> coef = hermfromroots((-1, 0, 1))
     >>> hermval((-1, 0, 1), coef)
     array([0.,  0.,  0.])
@@ -348,7 +351,7 @@ def hermadd(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermadd
+    >>> from orthax.hermite import hermadd
     >>> hermadd([1, 2, 3], [1, 2, 3, 4])
     array([2., 4., 6., 4.])
 
@@ -389,7 +392,7 @@ def hermsub(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermsub
+    >>> from orthax.hermite import hermsub
     >>> hermsub([1, 2, 3, 4], [1, 2, 3])
     array([0.,  0.,  0.,  4.])
 
@@ -435,7 +438,7 @@ def hermmulx(c, mode="full"):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermmulx
+    >>> from orthax.hermite import hermmulx
     >>> hermmulx([1, 2, 3])
     array([2. , 6.5, 1. , 1.5])
 
@@ -491,7 +494,7 @@ def hermmul(c1, c2, mode="full"):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermmul
+    >>> from orthax.hermite import hermmul
     >>> hermmul([1, 2, 3], [0, 1, 2])
     array([52.,  29.,  52.,   7.,   6.])
 
@@ -569,7 +572,7 @@ def hermdiv(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermdiv
+    >>> from orthax.hermite import hermdiv
     >>> hermdiv([ 52.,  29.,  52.,   7.,   6.], [0, 1, 2])
     (array([1., 2., 3.]), array([0.]))
     >>> hermdiv([ 54.,  31.,  52.,   7.,   6.], [0, 1, 2])
@@ -611,7 +614,7 @@ def hermpow(c, pow, maxpower=16):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermpow
+    >>> from orthax.hermite import hermpow
     >>> hermpow([1, 2, 3], 2)
     array([81.,  52.,  82.,  12.,   9.])
 
@@ -666,7 +669,7 @@ def hermder(c, m=1, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermder
+    >>> from orthax.hermite import hermder
     >>> hermder([ 1. ,  0.5,  0.5,  0.5])
     array([1., 2., 3.])
     >>> hermder([-0.5,  1./2.,  1./8.,  1./12.,  1./16.], m=2)
@@ -767,7 +770,7 @@ def hermint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermint
+    >>> from orthax.hermite import hermint
     >>> hermint([1,2,3]) # integrate once, value 0 at 0.
     array([1. , 0.5, 0.5, 0.5])
     >>> hermint([1,2,3], m=2) # integrate twice, value & deriv 0 at 0
@@ -872,7 +875,7 @@ def hermval(x, c, tensor=True):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermval
+    >>> from orthax.hermite import hermval
     >>> coef = [1,2,3]
     >>> hermval(1, coef)
     11.0
@@ -1137,7 +1140,7 @@ def hermvander(x, deg):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermvander
+    >>> from orthax.hermite import hermvander
     >>> x = np.array([-1, 0, 1])
     >>> hermvander(x, 3)
     array([[ 1., -2.,  2.,  4.],
@@ -1291,8 +1294,8 @@ def hermfit(x, y, deg, rcond=None, full=False, w=None):
     deg : int or 1-D array_like
         Degree(s) of the fitting polynomials. If `deg` is a single integer
         all terms up to and including the `deg`'th term are included in the
-        fit. For NumPy versions >= 1.11.0 a list of integers specifying the
-        degrees of the terms to include may be used instead.
+        fit. A tuple of integers specifying the degrees of the terms to include
+        may be used instead.
     rcond : float, optional
         Relative condition number of the fit. Singular values smaller than
         this relative to the largest singular value will be ignored. The
@@ -1324,20 +1327,19 @@ def hermfit(x, y, deg, rcond=None, full=False, w=None):
         - singular_values -- singular values of the scaled Vandermonde matrix
         - rcond -- value of `rcond`.
 
-        For more details, see `numpy.linalg.lstsq`.
+        For more details, see `jax.numpy.linalg.lstsq`.
 
     See Also
     --------
-    numpy.polynomial.chebyshev.chebfit
-    numpy.polynomial.legendre.legfit
-    numpy.polynomial.laguerre.lagfit
-    numpy.polynomial.polynomial.polyfit
-    numpy.polynomial.hermite_e.hermefit
+    orthax.chebyshev.chebfit
+    orthax.legendre.legfit
+    orthax.laguerre.lagfit
+    orthax.polynomial.polyfit
+    orthax.hermite_e.hermefit
     hermval : Evaluates a Hermite series.
     hermvander : Vandermonde matrix of Hermite series.
     hermweight : Hermite weight function
-    numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
-    scipy.interpolate.UnivariateSpline : Computes spline fits.
+    jax.numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
 
     Notes
     -----
@@ -1369,14 +1371,9 @@ def hermfit(x, y, deg, rcond=None, full=False, w=None):
     together with data values ``y[i]/sqrt(w(x[i]))``. The weight function is
     available as `hermweight`.
 
-    References
-    ----------
-    .. [1] Wikipedia, "Curve fitting",
-           https://en.wikipedia.org/wiki/Curve_fitting
-
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermfit, hermval
+    >>> from orthax.hermite import hermfit, hermval
     >>> x = np.linspace(-10, 10)
     >>> err = np.random.randn(len(x))/10
     >>> y = hermval(x, [1, 2, 3]) + err
@@ -1395,7 +1392,7 @@ def hermcompanion(c):
     symmetric when `c` is an Hermite basis polynomial. This provides
     better eigenvalue estimates than the unscaled case and for basis
     polynomials the eigenvalues are guaranteed to be real if
-    `numpy.linalg.eigvalsh` is used to obtain them.
+    `jax.numpy.linalg.eigvalsh` is used to obtain them.
 
     Parameters
     ----------
@@ -1449,11 +1446,11 @@ def hermroots(c):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyroots
-    numpy.polynomial.legendre.legroots
-    numpy.polynomial.laguerre.lagroots
-    numpy.polynomial.chebyshev.chebroots
-    numpy.polynomial.hermite_e.hermeroots
+    orthax.polynomial.polyroots
+    orthax.legendre.legroots
+    orthax.laguerre.lagroots
+    orthax.chebyshev.chebroots
+    orthax.hermite_e.hermeroots
 
     Notes
     -----
@@ -1470,7 +1467,7 @@ def hermroots(c):
 
     Examples
     --------
-    >>> from numpy.polynomial.hermite import hermroots, hermfromroots
+    >>> from orthax.hermite import hermroots, hermfromroots
     >>> coef = hermfromroots([-1, 0, 1])
     >>> coef
     array([0.   ,  0.25 ,  0.   ,  0.125])

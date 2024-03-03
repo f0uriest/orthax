@@ -1,4 +1,7 @@
-"""Power Series.
+"""
+============
+Power Series
+============
 
 This module provides a number of functions useful for
 dealing with polynomials.
@@ -54,10 +57,6 @@ Misc Functions
    polytrim
    polyline
 
-See Also
---------
-`numpy.polynomial`
-
 """
 __all__ = [
     "polyzero",
@@ -99,17 +98,17 @@ from . import polyutils as pu
 
 polytrim = pu.trimcoef
 
-# Polynomial default domain.
 polydomain = jnp.array([-1, 1])
+"""Polynomial default domain."""
 
-# Polynomial coefficients representing zero.
 polyzero = jnp.array([0])
+"""Polynomial coefficients representing zero."""
 
-# Polynomial coefficients representing one.
 polyone = jnp.array([1])
+"""Polynomial coefficients representing one."""
 
-# Polynomial coefficients representing the identity x.
 polyx = jnp.array([0, 1])
+"""Polynomial coefficients representing the identity x."""
 
 
 @jit
@@ -130,15 +129,15 @@ def polyline(off, scl):
 
     See Also
     --------
-    numpy.polynomial.chebyshev.chebline
-    numpy.polynomial.legendre.legline
-    numpy.polynomial.laguerre.lagline
-    numpy.polynomial.hermite.hermline
-    numpy.polynomial.hermite_e.hermeline
+    orthax.chebyshev.chebline
+    orthax.legendre.legline
+    orthax.laguerre.lagline
+    orthax.hermite.hermline
+    orthax.hermite_e.hermeline
 
     Examples
     --------
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> P.polyline(1,-1)
     array([ 1, -1])
     >>> P.polyval(1, P.polyline(1,-1)) # should be 0
@@ -184,11 +183,11 @@ def polyfromroots(roots):
 
     See Also
     --------
-    numpy.polynomial.chebyshev.chebfromroots
-    numpy.polynomial.legendre.legfromroots
-    numpy.polynomial.laguerre.lagfromroots
-    numpy.polynomial.hermite.hermfromroots
-    numpy.polynomial.hermite_e.hermefromroots
+    orthax.chebyshev.chebfromroots
+    orthax.legendre.legfromroots
+    orthax.laguerre.lagfromroots
+    orthax.hermite.hermfromroots
+    orthax.hermite_e.hermefromroots
 
     Notes
     -----
@@ -202,7 +201,7 @@ def polyfromroots(roots):
 
     Examples
     --------
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> P.polyfromroots((-1,0,1)) # x(x - 1)(x + 1) = x^3 - x
     array([ 0., -1.,  0.,  1.])
     >>> j = complex(0,1)
@@ -238,7 +237,7 @@ def polyadd(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> sum = P.polyadd(c1,c2); sum
@@ -276,7 +275,7 @@ def polysub(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> P.polysub(c1,c2)
@@ -353,7 +352,7 @@ def polymul(c1, c2, mode="full"):
 
     Examples
     --------
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> P.polymul(c1,c2)
@@ -392,7 +391,7 @@ def polydiv(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> P.polydiv(c1,c2)
@@ -435,7 +434,7 @@ def polypow(c, pow, maxpower=16):
 
     Examples
     --------
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> P.polypow([1,2,3], 2)
     array([ 1., 4., 10., 12., 9.])
 
@@ -481,7 +480,7 @@ def polyder(c, m=1, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> c = (1,2,3,4) # 1 + 2x + 3x**2 + 4x**3
     >>> P.polyder(c) # (d/dx)(c) = 2 + 6x + 12x**2
     array([  2.,   6.,  12.])
@@ -581,7 +580,7 @@ def polyint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> c = (1,2,3)
     >>> P.polyint(c) # should return array([0, 1, 1, 1])
     array([0.,  1.,  1.,  1.])
@@ -693,7 +692,7 @@ def polyval(x, c, tensor=True):
 
     Examples
     --------
-    >>> from numpy.polynomial.polynomial import polyval
+    >>> from orthax.polynomial import polyval
     >>> polyval(1, [1,2,3])
     6.0
     >>> a = np.arange(4).reshape(2,2)
@@ -781,7 +780,7 @@ def polyvalfromroots(x, r, tensor=True):
 
     Examples
     --------
-    >>> from numpy.polynomial.polynomial import polyvalfromroots
+    >>> from orthax.polynomial import polyvalfromroots
     >>> polyvalfromroots(1, [1,2,3])
     0.0
     >>> a = np.arange(4).reshape(2,2)
@@ -1223,15 +1222,14 @@ def polyfit(x, y, deg, rcond=None, full=False, w=None):
 
     See Also
     --------
-    numpy.polynomial.chebyshev.chebfit
-    numpy.polynomial.legendre.legfit
-    numpy.polynomial.laguerre.lagfit
-    numpy.polynomial.hermite.hermfit
-    numpy.polynomial.hermite_e.hermefit
+    orthax.chebyshev.chebfit
+    orthax.legendre.legfit
+    orthax.laguerre.lagfit
+    orthax.hermite.hermfit
+    orthax.hermite_e.hermefit
     polyval : Evaluates a polynomial.
     polyvander : Vandermonde matrix for powers.
-    numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
-    scipy.interpolate.UnivariateSpline : Computes spline fits.
+    jax.numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
 
     Notes
     -----
@@ -1271,7 +1269,7 @@ def polyfit(x, y, deg, rcond=None, full=False, w=None):
     Examples
     --------
     >>> np.random.seed(123)
-    >>> from numpy.polynomial import polynomial as P
+    >>> from orthax import polynomial as P
     >>> x = np.linspace(-1,1,51) # x "data": [-1, -0.96, ..., 0.96, 1]
     >>> y = x**3 - x + np.random.randn(len(x))  # x^3 - x + Gaussian noise
     >>> c, stats = P.polyfit(x,y,3,full=True)
@@ -1351,11 +1349,11 @@ def polyroots(c):
 
     See Also
     --------
-    numpy.polynomial.chebyshev.chebroots
-    numpy.polynomial.legendre.legroots
-    numpy.polynomial.laguerre.lagroots
-    numpy.polynomial.hermite.hermroots
-    numpy.polynomial.hermite_e.hermeroots
+    orthax.chebyshev.chebroots
+    orthax.legendre.legroots
+    orthax.laguerre.lagroots
+    orthax.hermite.hermroots
+    orthax.hermite_e.hermeroots
 
     Notes
     -----
@@ -1369,7 +1367,7 @@ def polyroots(c):
 
     Examples
     --------
-    >>> import numpy.polynomial.polynomial as poly
+    >>> import orthax.polynomial as poly
     >>> poly.polyroots(poly.polyfromroots((-1,0,1)))
     array([-1.,  0.,  1.])
     >>> poly.polyroots(poly.polyfromroots((-1,0,1))).dtype

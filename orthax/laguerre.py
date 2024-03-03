@@ -1,4 +1,7 @@
-"""Laguerre Series.
+"""
+===============
+Laguerre Series
+===============
 
 This module provides a number of functions useful for dealing with Laguerre series.
 
@@ -127,7 +130,7 @@ def poly2lag(pol):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import poly2lag
+    >>> from orthax.laguerre import poly2lag
     >>> poly2lag(np.arange(4))
     array([ 23., -63.,  58., -18.])
 
@@ -171,7 +174,7 @@ def lag2poly(c):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lag2poly
+    >>> from orthax.laguerre import lag2poly
     >>> lag2poly([ 23., -63.,  58., -18.])
     array([0., 1., 2., 3.])
 
@@ -200,17 +203,17 @@ def lag2poly(c):
         return polyadd(c0, polysub(c1, polymulx(c1, "same")))
 
 
-# Laguerre domain
 lagdomain = jnp.array([0, 1])
+"""Laguerre domain."""
 
-# Laguerre coefficients representing zero.
 lagzero = jnp.array([0])
+"""Laguerre coefficients representing zero."""
 
-# Laguerre coefficients representing one.
 lagone = jnp.array([1])
+"""Laguerre coefficients representing one."""
 
-# Laguerre coefficients representing the identity x.
 lagx = jnp.array([1, -1])
+"""Laguerre coefficients representing the identity x."""
 
 
 @jit
@@ -231,15 +234,15 @@ def lagline(off, scl):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyline
-    numpy.polynomial.chebyshev.chebline
-    numpy.polynomial.legendre.legline
-    numpy.polynomial.hermite.hermline
-    numpy.polynomial.hermite_e.hermeline
+    orthax.polynomial.polyline
+    orthax.chebyshev.chebline
+    orthax.legendre.legline
+    orthax.hermite.hermline
+    orthax.hermite_e.hermeline
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagline, lagval
+    >>> from orthax.laguerre import lagline, lagval
     >>> lagval(0,lagline(3, 2))
     3.0
     >>> lagval(1,lagline(3, 2))
@@ -286,15 +289,15 @@ def lagfromroots(roots):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyfromroots
-    numpy.polynomial.legendre.legfromroots
-    numpy.polynomial.chebyshev.chebfromroots
-    numpy.polynomial.hermite.hermfromroots
-    numpy.polynomial.hermite_e.hermefromroots
+    orthax.polynomial.polyfromroots
+    orthax.legendre.legfromroots
+    orthax.chebyshev.chebfromroots
+    orthax.hermite.hermfromroots
+    orthax.hermite_e.hermefromroots
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagfromroots, lagval
+    >>> from orthax.laguerre import lagfromroots, lagval
     >>> coef = lagfromroots((-1, 0, 1))
     >>> lagval((-1, 0, 1), coef)
     array([0.,  0.,  0.])
@@ -338,7 +341,7 @@ def lagadd(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagadd
+    >>> from orthax.laguerre import lagadd
     >>> lagadd([1, 2, 3], [1, 2, 3, 4])
     array([2.,  4.,  6.,  4.])
 
@@ -380,7 +383,7 @@ def lagsub(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagsub
+    >>> from orthax.laguerre import lagsub
     >>> lagsub([1, 2, 3, 4], [1, 2, 3])
     array([0.,  0.,  0.,  4.])
 
@@ -425,7 +428,7 @@ def lagmulx(c, mode="full"):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagmulx
+    >>> from orthax.laguerre import lagmulx
     >>> lagmulx([1, 2, 3])
     array([-1.,  -1.,  11.,  -9.])
 
@@ -483,7 +486,7 @@ def lagmul(c1, c2, mode="full"):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagmul
+    >>> from orthax.laguerre import lagmul
     >>> lagmul([1, 2, 3], [0, 1, 2])
     array([  8., -13.,  38., -51.,  36.])
 
@@ -561,7 +564,7 @@ def lagdiv(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagdiv
+    >>> from orthax.laguerre import lagdiv
     >>> lagdiv([  8., -13.,  38., -51.,  36.], [0, 1, 2])
     (array([1., 2., 3.]), array([0.]))
     >>> lagdiv([  9., -12.,  38., -51.,  36.], [0, 1, 2])
@@ -601,7 +604,7 @@ def lagpow(c, pow, maxpower=16):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagpow
+    >>> from orthax.laguerre import lagpow
     >>> lagpow([1, 2, 3], 2)
     array([ 14., -16.,  56., -72.,  54.])
 
@@ -655,7 +658,7 @@ def lagder(c, m=1, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagder
+    >>> from orthax.laguerre import lagder
     >>> lagder([ 1.,  1.,  1., -3.])
     array([1.,  2.,  3.])
     >>> lagder([ 1.,  0.,  0., -4.,  3.], m=2)
@@ -766,7 +769,7 @@ def lagint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagint
+    >>> from orthax.laguerre import lagint
     >>> lagint([1,2,3])
     array([ 1.,  1.,  1., -3.])
     >>> lagint([1,2,3], m=2)
@@ -872,7 +875,7 @@ def lagval(x, c, tensor=True):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagval
+    >>> from orthax.laguerre import lagval
     >>> coef = [1,2,3]
     >>> lagval(1, coef)
     -0.5
@@ -1137,7 +1140,7 @@ def lagvander(x, deg):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagvander
+    >>> from orthax.laguerre import lagvander
     >>> x = np.array([0, 1, 2])
     >>> lagvander(x, 3)
     array([[ 1.        ,  1.        ,  1.        ,  1.        ],
@@ -1290,8 +1293,8 @@ def lagfit(x, y, deg, rcond=None, full=False, w=None):
     deg : int or 1-D array_like
         Degree(s) of the fitting polynomials. If `deg` is a single integer
         all terms up to and including the `deg`'th term are included in the
-        fit. For NumPy versions >= 1.11.0 a list of integers specifying the
-        degrees of the terms to include may be used instead.
+        fit. A tuple of integers specifying the degrees of the terms to include
+        may be used instead.
     rcond : float, optional
         Relative condition number of the fit. Singular values smaller than
         this relative to the largest singular value will be ignored. The
@@ -1323,20 +1326,19 @@ def lagfit(x, y, deg, rcond=None, full=False, w=None):
         - singular_values -- singular values of the scaled Vandermonde matrix
         - rcond -- value of `rcond`.
 
-        For more details, see `numpy.linalg.lstsq`.
+        For more details, see `jax.numpy.linalg.lstsq`.
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyfit
-    numpy.polynomial.legendre.legfit
-    numpy.polynomial.chebyshev.chebfit
-    numpy.polynomial.hermite.hermfit
-    numpy.polynomial.hermite_e.hermefit
+    orthax.polynomial.polyfit
+    orthax.legendre.legfit
+    orthax.chebyshev.chebfit
+    orthax.hermite.hermfit
+    orthax.hermite_e.hermefit
     lagval : Evaluates a Laguerre series.
     lagvander : pseudo Vandermonde matrix of Laguerre series.
     lagweight : Laguerre weight function.
-    numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
-    scipy.interpolate.UnivariateSpline : Computes spline fits.
+    jax.numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
 
     Notes
     -----
@@ -1368,14 +1370,9 @@ def lagfit(x, y, deg, rcond=None, full=False, w=None):
     together with data values ``y[i]/sqrt(w(x[i]))``. The weight function is
     available as `lagweight`.
 
-    References
-    ----------
-    .. [1] Wikipedia, "Curve fitting",
-           https://en.wikipedia.org/wiki/Curve_fitting
-
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagfit, lagval
+    >>> from orthax.laguerre import lagfit, lagval
     >>> x = np.linspace(0, 10)
     >>> err = np.random.randn(len(x))/10
     >>> y = lagval(x, [1, 2, 3]) + err
@@ -1443,11 +1440,11 @@ def lagroots(c):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyroots
-    numpy.polynomial.legendre.legroots
-    numpy.polynomial.chebyshev.chebroots
-    numpy.polynomial.hermite.hermroots
-    numpy.polynomial.hermite_e.hermeroots
+    orthax.polynomial.polyroots
+    orthax.legendre.legroots
+    orthax.chebyshev.chebroots
+    orthax.hermite.hermroots
+    orthax.hermite_e.hermeroots
 
     Notes
     -----
@@ -1464,7 +1461,7 @@ def lagroots(c):
 
     Examples
     --------
-    >>> from numpy.polynomial.laguerre import lagroots, lagfromroots
+    >>> from orthax.laguerre import lagroots, lagfromroots
     >>> coef = lagfromroots([0, 1, 2])
     >>> coef
     array([  2.,  -8.,  12.,  -6.])

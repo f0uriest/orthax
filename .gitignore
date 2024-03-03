@@ -2,7 +2,7 @@ __pycache__/
 build/
 data/
 dist/
-docs/_api
+docs/generated
 docs/_build
 htmlcov/
 local/

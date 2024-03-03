@@ -24,7 +24,7 @@ setup(
     name="orthax",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    description=("Numerical quadrature with JAX"),
+    description=("Orthogonal polynomials with JAX"),
     long_description=long_description,
     long_description_content_type="text/x-rst",
     url="https://github.com/f0uriest/orthax",

@@ -1,5 +1,7 @@
 """
-Utility classes and functions for the polynomial modules.
+=================
+Utility functions
+=================
 
 Functions
 ---------
@@ -7,7 +9,7 @@ Functions
 .. autosummary::
    :toctree: generated/
 
-   as_series    convert list of array_likes into 1-D arrays of common type.
+   as_series    convert array_likes into 1-D arrays of common type.
    trimseq      remove trailing zeros.
    trimcoef     remove small trailing coefficients.
    getdomain    return the domain appropriate for a given set of abscissae.

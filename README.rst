@@ -6,28 +6,23 @@ orthax
 
 |Docs| |UnitTests| |Codecov|
 
-`orthax` is a Python package for working with orthogonal (and other) polynomials in JAX.
-It largely seeks to replicate the functionality of the `numpy.polynomial` package, through
-there are some API differences due to limitations of JAX.
+``orthax`` is a Python package for working with orthogonal (and other) polynomials in JAX.
+It largely seeks to replicate the functionality of the ``numpy.polynomial`` package,
+through there are some API differences due to limitations of JAX, primarily that
+trailing zeros are not automatically trimmed from series, so you should do that
+manually if it becomes a concern.
+
+For full details of various options see the `Documentation <https://orthax.readthedocs.io/en/latest/>`__
 
 Installation
 ============
 
-orthax is installable with `pip`:
+orthax is installable with ``pip``:
 
 .. code-block:: console
 
     pip install orthax
 
-
-
-Usage
-=====
-
-.. code-block:: python
-
-
-For full details of various options see the `API documentation <https://orthax.readthedocs.io/en/latest/api.html>`__
 
 
 .. |License| image:: https://img.shields.io/github/license/f0uriest/orthax?color=blue&logo=open-source-initiative&logoColor=white

@@ -1,4 +1,7 @@
-r"""Chebyshev Series.
+"""
+================
+Chebyshev Series
+================
 
 This module provides a number of functions useful for dealing with Chebyshev series.
 
@@ -62,29 +65,6 @@ Misc Functions
    cheb2poly
    poly2cheb
    chebinterpolate
-
-Notes
------
-The implementations of multiplication, division, integration, and
-differentiation use the algebraic identities [1]_:
-
-.. math::
-    T_n(x) = \\frac{z^n + z^{-n}}{2} \\\\
-    z\\frac{dx}{dz} = \\frac{z - z^{-1}}{2}.
-
-where
-
-.. math:: x = \\frac{z + z^{-1}}{2}.
-
-These identities allow a Chebyshev series to be expressed as a finite,
-symmetric Laurent series.  In this module, this sort of Laurent series
-is referred to as a "z-series."
-
-References
-----------
-.. [1] A. T. Benjamin, et al., "Combinatorial Trigonometry with Chebyshev
-  Polynomials," *Journal of Statistical Planning and Inference 14*, 2008
-
 
 """
 import functools
@@ -251,18 +231,6 @@ def poly2cheb(pol):
     --------
     cheb2poly
 
-    Examples
-    --------
-    >>> from numpy import polynomial as P
-    >>> p = P.Polynomial(range(4))
-    >>> p
-    Polynomial([0., 1., 2., 3.], domain=[-1,  1], window=[-1,  1])
-    >>> c = p.convert(kind=P.Chebyshev)
-    >>> c
-    Chebyshev([1.  , 3.25, 1.  , 0.75], domain=[-1.,  1.], window=[-1.,  1.])
-    >>> P.chebyshev.poly2cheb(range(4))
-    array([1.  , 3.25, 1.  , 0.75])
-
     """
     pol = pu.as_series(pol)
     deg = len(pol) - 1
@@ -304,18 +272,6 @@ def cheb2poly(c):
     --------
     poly2cheb
 
-    Examples
-    --------
-    >>> from numpy import polynomial as P
-    >>> c = P.Chebyshev(range(4))
-    >>> c
-    Chebyshev([0., 1., 2., 3.], domain=[-1,  1], window=[-1,  1])
-    >>> p = c.convert(kind=P.Polynomial)
-    >>> p
-    Polynomial([-2., -8.,  4., 12.], domain=[-1.,  1.], window=[-1.,  1.])
-    >>> P.chebyshev.cheb2poly(range(4))
-    array([-2.,  -8.,   4.,  12.])
-
     """
     from .polynomial import polyadd, polymulx, polysub
 
@@ -341,17 +297,17 @@ def cheb2poly(c):
         return polyadd(c0, polymulx(c1, "same"))
 
 
-# Chebyshev default domain.
 chebdomain = jnp.array([-1, 1])
+"""Chebyshev default domain."""
 
-# Chebyshev coefficients representing zero.
 chebzero = jnp.array([0])
+"""Chebyshev coefficients representing zero."""
 
-# Chebyshev coefficients representing one.
 chebone = jnp.array([1])
+"""Chebyshev coefficients representing one."""
 
-# Chebyshev coefficients representing the identity x.
 chebx = jnp.array([0, 1])
+"""Chebyshev coefficients representing the identity x."""
 
 
 @jit
@@ -371,15 +327,15 @@ def chebline(off, scl):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyline
-    numpy.polynomial.legendre.legline
-    numpy.polynomial.laguerre.lagline
-    numpy.polynomial.hermite.hermline
-    numpy.polynomial.hermite_e.hermeline
+    orthax.polynomial.polyline
+    orthax.legendre.legline
+    orthax.laguerre.lagline
+    orthax.hermite.hermline
+    orthax.hermite_e.hermeline
 
     Examples
     --------
-    >>> import numpy.polynomial.chebyshev as C
+    >>> import orthax.chebyshev as C
     >>> C.chebline(3,2)
     array([3, 2])
     >>> C.chebval(-3, C.chebline(3,2)) # should be -3
@@ -425,15 +381,15 @@ def chebfromroots(roots):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyfromroots
-    numpy.polynomial.legendre.legfromroots
-    numpy.polynomial.laguerre.lagfromroots
-    numpy.polynomial.hermite.hermfromroots
-    numpy.polynomial.hermite_e.hermefromroots
+    orthax.polynomial.polyfromroots
+    orthax.legendre.legfromroots
+    orthax.laguerre.lagfromroots
+    orthax.hermite.hermfromroots
+    orthax.hermite_e.hermefromroots
 
     Examples
     --------
-    >>> import numpy.polynomial.chebyshev as C
+    >>> import orthax.chebyshev as C
     >>> C.chebfromroots((-1,0,1)) # x^3 - x relative to the standard basis
     array([ 0.  , -0.25,  0.  ,  0.25])
     >>> j = complex(0,1)
@@ -476,7 +432,7 @@ def chebadd(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial import chebyshev as C
+    >>> from orthax import chebyshev as C
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> C.chebadd(c1,c2)
@@ -518,7 +474,7 @@ def chebsub(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial import chebyshev as C
+    >>> from orthax import chebyshev as C
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> C.chebsub(c1,c2)
@@ -554,7 +510,7 @@ def chebmulx(c, mode="full"):
 
     Examples
     --------
-    >>> from numpy.polynomial import chebyshev as C
+    >>> from orthax import chebyshev as C
     >>> C.chebmulx([1,2,3])
     array([1. , 2.5, 1. , 1.5])
 
@@ -609,7 +565,7 @@ def chebmul(c1, c2, mode="full"):
 
     Examples
     --------
-    >>> from numpy.polynomial import chebyshev as C
+    >>> from orthax import chebyshev as C
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> C.chebmul(c1,c2) # multiplication requires "reprojection"
@@ -663,7 +619,7 @@ def chebdiv(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial import chebyshev as C
+    >>> from orthax import chebyshev as C
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> C.chebdiv(c1,c2) # quotient "intuitive," remainder not
@@ -708,7 +664,7 @@ def chebpow(c, pow, maxpower=16):
 
     Examples
     --------
-    >>> from numpy.polynomial import chebyshev as C
+    >>> from orthax import chebyshev as C
     >>> C.chebpow([1, 2, 3, 4], 2)
     array([15.5, 22. , 16. , ..., 12.5, 12. ,  8. ])
 
@@ -788,7 +744,7 @@ def chebder(c, m=1, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial import chebyshev as C
+    >>> from orthax import chebyshev as C
     >>> c = (1,2,3,4)
     >>> C.chebder(c)
     array([14., 12., 24.])
@@ -905,7 +861,7 @@ def chebint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial import chebyshev as C
+    >>> from orthax import chebyshev as C
     >>> c = (1,2,3)
     >>> C.chebint(c)
     array([ 0.5, -0.5,  0.5,  0.5])
@@ -1413,8 +1369,8 @@ def chebfit(x, y, deg, rcond=None, full=False, w=None):
     deg : int or 1-D array_like
         Degree(s) of the fitting polynomials. If `deg` is a single integer,
         all terms up to and including the `deg`'th term are included in the
-        fit. For NumPy versions >= 1.11.0 a list of integers specifying the
-        degrees of the terms to include may be used instead.
+        fit. A tuple of integers specifying the degrees of the terms to include
+        may be used instead.
     rcond : float, optional
         Relative condition number of the fit. Singular values smaller than
         this relative to the largest singular value will be ignored. The
@@ -1446,20 +1402,19 @@ def chebfit(x, y, deg, rcond=None, full=False, w=None):
         - singular_values -- singular values of the scaled Vandermonde matrix
         - rcond -- value of `rcond`.
 
-        For more details, see `numpy.linalg.lstsq`.
+        For more details, see `jax.numpy.linalg.lstsq`.
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyfit
-    numpy.polynomial.legendre.legfit
-    numpy.polynomial.laguerre.lagfit
-    numpy.polynomial.hermite.hermfit
-    numpy.polynomial.hermite_e.hermefit
+    orthax.polynomial.polyfit
+    orthax.legendre.legfit
+    orthax.laguerre.lagfit
+    orthax.hermite.hermfit
+    orthax.hermite_e.hermefit
     chebval : Evaluates a Chebyshev series.
     chebvander : Vandermonde matrix of Chebyshev series.
     chebweight : Chebyshev weight function.
-    numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
-    scipy.interpolate.UnivariateSpline : Computes spline fits.
+    jax.numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
 
     Notes
     -----
@@ -1490,11 +1445,6 @@ def chebfit(x, y, deg, rcond=None, full=False, w=None):
     sample points and the smoothness of the data. If the quality of the fit
     is inadequate splines may be a good alternative.
 
-    References
-    ----------
-    .. [1] Wikipedia, "Curve fitting",
-           https://en.wikipedia.org/wiki/Curve_fitting
-
     """
     return pu._fit(chebvander, x, y, deg, rcond, full, w)
 
@@ -1507,7 +1457,7 @@ def chebcompanion(c):
     symmetric when `c` is a Chebyshev basis polynomial. This provides
     better eigenvalue estimates than the unscaled case and for basis
     polynomials the eigenvalues are guaranteed to be real if
-    `numpy.linalg.eigvalsh` is used to obtain them.
+    `jax.numpy.linalg.eigvalsh` is used to obtain them.
 
     Parameters
     ----------
@@ -1560,11 +1510,11 @@ def chebroots(c):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyroots
-    numpy.polynomial.legendre.legroots
-    numpy.polynomial.laguerre.lagroots
-    numpy.polynomial.hermite.hermroots
-    numpy.polynomial.hermite_e.hermeroots
+    orthax.polynomial.polyroots
+    orthax.legendre.legroots
+    orthax.laguerre.lagroots
+    orthax.hermite.hermroots
+    orthax.hermite_e.hermeroots
 
     Notes
     -----
@@ -1581,7 +1531,7 @@ def chebroots(c):
 
     Examples
     --------
-    >>> import numpy.polynomial.chebyshev as cheb
+    >>> import orthax.chebyshev as cheb
     >>> cheb.chebroots((-1, 1,-1, 1)) # T3 - T2 + T1 - T0 has real roots
     array([ -5.00000000e-01,   2.60860684e-17,   1.00000000e+00]) # may vary
 
@@ -1627,7 +1577,7 @@ def chebinterpolate(func, deg, args=()):
 
     Examples
     --------
-    >>> import numpy.polynomial.chebyshev as C
+    >>> import orthax.chebyshev as C
     >>> C.chebinterpolate(lambda x: np.tanh(x) + 0.5, 8)
     array([  5.00000000e-01,   8.11675684e-01,  -9.86864911e-17,
             -5.42457905e-02,  -2.71387850e-16,   4.51658839e-03,

@@ -1,4 +1,7 @@
-"""Legendre Series.
+"""
+===============
+Legendre Series
+===============
 
 This module provides a number of functions useful for dealing with Legendre series.
 
@@ -129,16 +132,6 @@ def poly2leg(pol):
     --------
     leg2poly
 
-    Examples
-    --------
-    >>> from numpy import polynomial as P
-    >>> p = P.Polynomial(np.arange(4))
-    >>> p
-    Polynomial([0.,  1.,  2.,  3.], domain=[-1,  1], window=[-1,  1])
-    >>> c = P.Legendre(P.legendre.poly2leg(p.coef))
-    >>> c
-    Legendre([ 1.  ,  3.25,  1.  ,  0.75], domain=[-1,  1], window=[-1,  1]) # may vary
-
     """
     pol = pu.as_series(pol)
     deg = len(pol) - 1
@@ -180,19 +173,6 @@ def leg2poly(c):
     --------
     poly2leg
 
-    Examples
-    --------
-    >>> from numpy import polynomial as P
-    >>> c = P.Legendre(range(4))
-    >>> c
-    Legendre([0., 1., 2., 3.], domain=[-1,  1], window=[-1,  1])
-    >>> p = c.convert(kind=P.Polynomial)
-    >>> p
-    Polynomial([-1. , -3.5,  3. ,  7.5], domain=[-1.,  1.], window=[-1.,  1.])
-    >>> P.legendre.leg2poly(range(4))
-    array([-1. , -3.5,  3. ,  7.5])
-
-
     """
     from .polynomial import polyadd, polymulx, polysub
 
@@ -218,17 +198,17 @@ def leg2poly(c):
         return polyadd(c0, polymulx(c1, "same"))
 
 
-# Legendre domain
 legdomain = jnp.array([-1, 1])
+"""Legendre domain."""
 
-# Legendre coefficients representing zero.
 legzero = jnp.array([0])
+"""Legendre coefficients representing zero."""
 
-# Legendre coefficients representing one.
 legone = jnp.array([1])
+"""Legendre coefficients representing one."""
 
-# Legendre coefficients representing the identity x.
 legx = jnp.array([0, 1])
+"""Legendre coefficients representing the identity x."""
 
 
 @jit
@@ -248,15 +228,15 @@ def legline(off, scl):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyline
-    numpy.polynomial.chebyshev.chebline
-    numpy.polynomial.laguerre.lagline
-    numpy.polynomial.hermite.hermline
-    numpy.polynomial.hermite_e.hermeline
+    orthax.polynomial.polyline
+    orthax.chebyshev.chebline
+    orthax.laguerre.lagline
+    orthax.hermite.hermline
+    orthax.hermite_e.hermeline
 
     Examples
     --------
-    >>> import numpy.polynomial.legendre as L
+    >>> import orthax.legendre as L
     >>> L.legline(3,2)
     array([3, 2])
     >>> L.legval(-3, L.legline(3,2)) # should be -3
@@ -302,15 +282,15 @@ def legfromroots(roots):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyfromroots
-    numpy.polynomial.chebyshev.chebfromroots
-    numpy.polynomial.laguerre.lagfromroots
-    numpy.polynomial.hermite.hermfromroots
-    numpy.polynomial.hermite_e.hermefromroots
+    orthax.polynomial.polyfromroots
+    orthax.chebyshev.chebfromroots
+    orthax.laguerre.lagfromroots
+    orthax.hermite.hermfromroots
+    orthax.hermite_e.hermefromroots
 
     Examples
     --------
-    >>> import numpy.polynomial.legendre as L
+    >>> import orthax.legendre as L
     >>> L.legfromroots((-1,0,1)) # x^3 - x relative to the standard basis
     array([ 0. , -0.4,  0. ,  0.4])
     >>> j = complex(0,1)
@@ -354,7 +334,7 @@ def legadd(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial import legendre as L
+    >>> from orthax import legendre as L
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> L.legadd(c1,c2)
@@ -397,7 +377,7 @@ def legsub(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial import legendre as L
+    >>> from orthax import legendre as L
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> L.legsub(c1,c2)
@@ -446,7 +426,7 @@ def legmulx(c, mode="full"):
 
     Examples
     --------
-    >>> from numpy.polynomial import legendre as L
+    >>> from orthax import legendre as L
     >>> L.legmulx([1,2,3])
     array([ 0.66666667, 2.2, 1.33333333, 1.8]) # may vary
 
@@ -507,7 +487,7 @@ def legmul(c1, c2, mode="full"):
 
     Examples
     --------
-    >>> from numpy.polynomial import legendre as L
+    >>> from orthax import legendre as L
     >>> c1 = (1,2,3)
     >>> c2 = (3,2)
     >>> L.legmul(c1,c2) # multiplication requires "reprojection"
@@ -586,7 +566,7 @@ def legdiv(c1, c2):
 
     Examples
     --------
-    >>> from numpy.polynomial import legendre as L
+    >>> from orthax import legendre as L
     >>> c1 = (1,2,3)
     >>> c2 = (3,2,1)
     >>> L.legdiv(c1,c2) # quotient "intuitive," remainder not
@@ -677,7 +657,7 @@ def legder(c, m=1, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial import legendre as L
+    >>> from orthax import legendre as L
     >>> c = (1,2,3,4)
     >>> L.legder(c)
     array([  6.,   9.,  20.])
@@ -794,7 +774,7 @@ def legint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
 
     Examples
     --------
-    >>> from numpy.polynomial import legendre as L
+    >>> from orthax import legendre as L
     >>> c = (1,2,3)
     >>> L.legint(c)
     array([ 0.33333333,  0.4       ,  0.66666667,  0.6       ]) # may vary
@@ -1302,8 +1282,8 @@ def legfit(x, y, deg, rcond=None, full=False, w=None):
     deg : int or 1-D array_like
         Degree(s) of the fitting polynomials. If `deg` is a single integer
         all terms up to and including the `deg`'th term are included in the
-        fit. For NumPy versions >= 1.11.0 a list of integers specifying the
-        degrees of the terms to include may be used instead.
+        fit. A tuple of integers specifying the degrees of the terms to include
+        may be used instead.
     rcond : float, optional
         Relative condition number of the fit. Singular values smaller than
         this relative to the largest singular value will be ignored. The
@@ -1337,20 +1317,19 @@ def legfit(x, y, deg, rcond=None, full=False, w=None):
         - singular_values -- singular values of the scaled Vandermonde matrix
         - rcond -- value of `rcond`.
 
-        For more details, see `numpy.linalg.lstsq`.
+        For more details, see `jax.numpy.linalg.lstsq`.
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyfit
-    numpy.polynomial.chebyshev.chebfit
-    numpy.polynomial.laguerre.lagfit
-    numpy.polynomial.hermite.hermfit
-    numpy.polynomial.hermite_e.hermefit
+    orthax.polynomial.polyfit
+    orthax.chebyshev.chebfit
+    orthax.laguerre.lagfit
+    orthax.hermite.hermfit
+    orthax.hermite_e.hermefit
     legval : Evaluates a Legendre series.
     legvander : Vandermonde matrix of Legendre series.
     legweight : Legendre weight function (= 1).
-    numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
-    scipy.interpolate.UnivariateSpline : Computes spline fits.
+    jax.numpy.linalg.lstsq : Computes a least-squares fit from the matrix.
 
     Notes
     -----
@@ -1381,11 +1360,6 @@ def legfit(x, y, deg, rcond=None, full=False, w=None):
     sample points and the smoothness of the data. If the quality of the fit
     is inadequate splines may be a good alternative.
 
-    References
-    ----------
-    .. [1] Wikipedia, "Curve fitting",
-           https://en.wikipedia.org/wiki/Curve_fitting
-
     """
     return pu._fit(legvander, x, y, deg, rcond, full, w)
 
@@ -1398,7 +1372,7 @@ def legcompanion(c):
     symmetric when `c` is an Legendre basis polynomial. This provides
     better eigenvalue estimates than the unscaled case and for basis
     polynomials the eigenvalues are guaranteed to be real if
-    `numpy.linalg.eigvalsh` is used to obtain them.
+    `jax.numpy.linalg.eigvalsh` is used to obtain them.
 
     Parameters
     ----------
@@ -1451,11 +1425,11 @@ def legroots(c):
 
     See Also
     --------
-    numpy.polynomial.polynomial.polyroots
-    numpy.polynomial.chebyshev.chebroots
-    numpy.polynomial.laguerre.lagroots
-    numpy.polynomial.hermite.hermroots
-    numpy.polynomial.hermite_e.hermeroots
+    orthax.polynomial.polyroots
+    orthax.chebyshev.chebroots
+    orthax.laguerre.lagroots
+    orthax.hermite.hermroots
+    orthax.hermite_e.hermeroots
 
     Notes
     -----
@@ -1472,7 +1446,7 @@ def legroots(c):
 
     Examples
     --------
-    >>> import numpy.polynomial.legendre as leg
+    >>> import orthax.legendre as leg
     >>> leg.legroots((1, 2, 3, 4)) # 4L_3 + 3L_2 + 2L_1 + 1L_0, all real roots
     array([-0.85099543, -0.11407192,  0.51506735]) # may vary
 
