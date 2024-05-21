@@ -52,6 +52,7 @@ Misc Functions
    lagvander3d
    laggauss
    lagweight
+   lagnorm
    lagcompanion
    lagfit
    lagtrim
@@ -1564,3 +1565,27 @@ def lagweight(x):
     """
     w = jnp.exp(-x)
     return w
+
+
+@jit
+def lagnorm(n):
+    r"""Norm of nth Laguerre polynomial.
+
+    The norm :math:`\gamma_n` is defined such that
+
+    :math:`\int_{0}^{\inf} L_n^2(x) \exp(-x) dx = \gamma_n^2`
+
+    With this definition :math:`\gamma_n^2 = 1`
+
+    Parameters
+    ----------
+    n : int
+       Order of Laguerre polynomial.
+
+    Returns
+    -------
+    gamma_n : float
+       Norm of the nth Laguerre polynomial.
+
+    """
+    return jnp.ones(jnp.asarray(n).shape)

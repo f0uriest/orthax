@@ -56,6 +56,7 @@ Misc Functions
    chebvander3d
    chebgauss
    chebweight
+   chebnorm
    chebcompanion
    chebfit
    chebpts1
@@ -1675,6 +1676,30 @@ def chebweight(x):
     x = jnp.asarray(x)
     w = 1.0 / (jnp.sqrt(1.0 + x) * jnp.sqrt(1.0 - x))
     return w
+
+
+@jit
+def chebnorm(n):
+    r"""Norm of nth Chebyshev polynomial.
+
+    The norm :math:`\gamma_n` is defined such that
+
+    :math:`\int_{-1}^{1} T_n^2(x) dx = \gamma_n^2`
+
+    With this definition :math:`\gamma_n^2 = \pi /(1 + \delta_{0,n})`
+
+    Parameters
+    ----------
+    n : int
+       Order of Chebyshev polynomial.
+
+    Returns
+    -------
+    gamma_n : float
+       Norm of the nth Chebyshev polynomial.
+
+    """
+    return jnp.sqrt(jnp.where(n == 0, jnp.pi, jnp.pi / 2))
 
 
 def chebpts1(npts):

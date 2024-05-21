@@ -56,6 +56,7 @@ Misc Functions
    legvander3d
    leggauss
    legweight
+   legnorm
    legcompanion
    legfit
    legtrim
@@ -1550,3 +1551,27 @@ def legweight(x):
     """
     w = jnp.ones_like(x)
     return w
+
+
+@jit
+def legnorm(n):
+    r"""Norm of nth Legendre polynomial.
+
+    The norm :math:`\gamma_n` is defined such that
+
+    :math:`\int_{-1}^{1} P_n^2(x) dx = \gamma_n^2`
+
+    With this definition :math:`\gamma_n^2 = 2/(2n+1)`
+
+    Parameters
+    ----------
+    n : int
+       Order of Legendre polynomial.
+
+    Returns
+    -------
+    gamma_n : float
+       Norm of the nth Legendre polynomial.
+
+    """
+    return jnp.sqrt(2 / (2 * n + 1))

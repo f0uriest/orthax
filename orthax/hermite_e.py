@@ -52,6 +52,7 @@ Misc Functions
    hermevander3d
    hermegauss
    hermeweight
+   hermenorm
    hermecompanion
    hermefit
    hermetrim
@@ -1604,3 +1605,29 @@ def hermeweight(x):
     """
     w = jnp.exp(-0.5 * x**2)
     return w
+
+
+@jit
+def hermenorm(n):
+    r"""Norm of nth Hermite_e polynomial.
+
+    The norm :math:`\gamma_n` is defined such that
+
+    :math:`\int_{-\inf}^{\inf} He_n^2(x) \exp(-x^2/2) dx = \gamma_n^2`
+
+    With this definition :math:`\gamma_n^2 = \sqrt{2 \pi} n!`
+
+    Parameters
+    ----------
+    n : int
+       Order of Hermite_e polynomial.
+
+    Returns
+    -------
+    gamma_n : float
+       Norm of the nth Hermite_e polynomial.
+
+    """
+    return jnp.sqrt(jnp.sqrt(2 * jnp.pi)) * jnp.exp(
+        jax.scipy.special.gammaln(n + 1) / 2
+    )
