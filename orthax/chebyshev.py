@@ -67,6 +67,7 @@ Misc Functions
    chebinterpolate
 
 """
+
 import functools
 
 import jax
@@ -1003,7 +1004,7 @@ def chebval2d(x, y, c):
 
     This function returns the values:
 
-    .. math:: p(x,y) = \\sum_{i,j} c_{i,j} * T_i(x) * T_j(y)
+    .. math:: p(x,y) = \sum_{i,j} c_{i,j} * T_i(x) * T_j(y)
 
     The parameters `x` and `y` are converted to arrays only if they are
     tuples or a lists, otherwise they are treated as a scalars and they
@@ -1047,7 +1048,7 @@ def chebgrid2d(x, y, c):
 
     This function returns the values:
 
-    .. math:: p(a,b) = \\sum_{i,j} c_{i,j} * T_i(a) * T_j(b),
+    .. math:: p(a,b) = \sum_{i,j} c_{i,j} * T_i(a) * T_j(b),
 
     where the points `(a, b)` consist of all pairs formed by taking
     `a` from `x` and `b` from `y`. The resulting points form a grid with
@@ -1095,7 +1096,7 @@ def chebval3d(x, y, z, c):
 
     This function returns the values:
 
-    .. math:: p(x,y,z) = \\sum_{i,j,k} c_{i,j,k} * T_i(x) * T_j(y) * T_k(z)
+    .. math:: p(x,y,z) = \sum_{i,j,k} c_{i,j,k} * T_i(x) * T_j(y) * T_k(z)
 
     The parameters `x`, `y`, and `z` are converted to arrays only if
     they are tuples or a lists, otherwise they are treated as a scalars and
@@ -1141,7 +1142,7 @@ def chebgrid3d(x, y, z, c):
 
     This function returns the values:
 
-    .. math:: p(a,b,c) = \\sum_{i,j,k} c_{i,j,k} * T_i(a) * T_j(b) * T_k(c)
+    .. math:: p(a,b,c) = \sum_{i,j,k} c_{i,j,k} * T_i(a) * T_j(b) * T_k(c)
 
     where the points `(a, b, c)` consist of all triples formed by taking
     `a` from `x`, `b` from `y`, and `c` from `z`. The resulting points form
@@ -1421,7 +1422,7 @@ def chebfit(x, y, deg, rcond=None, full=False, w=None):
     The solution is the coefficients of the Chebyshev series `p` that
     minimizes the sum of the weighted squared errors
 
-    .. math:: E = \\sum_j w_j^2 * |y_j - p(x_j)|^2,
+    .. math:: E = \sum_j w_j^2 * |y_j - p(x_j)|^2,
 
     where :math:`w_j` are the weights. This problem is solved by setting up
     as the (typically) overdetermined matrix equation
@@ -1495,7 +1496,7 @@ def chebroots(c):
 
     Return the roots (a.k.a. "zeros") of the polynomial
 
-    .. math:: p(x) = \\sum_i c[i] * T_i(x).
+    .. math:: p(x) = \sum_i c[i] * T_i(x).
 
     Parameters
     ----------
@@ -1617,7 +1618,7 @@ def chebgauss(deg):
     Computes the sample points and weights for Gauss-Chebyshev quadrature.
     These sample points and weights will correctly integrate polynomials of
     degree :math:`2*deg - 1` or less over the interval :math:`[-1, 1]` with
-    the weight function :math:`f(x) = 1/\\sqrt{1 - x^2}`.
+    the weight function :math:`f(x) = 1/\sqrt{1 - x^2}`.
 
     Parameters
     ----------
@@ -1637,9 +1638,9 @@ def chebgauss(deg):
     be problematic. For Gauss-Chebyshev there are closed form solutions for
     the sample points and weights. If n = `deg`, then
 
-    .. math:: x_i = \\cos(\\pi (2 i - 1) / (2 n))
+    .. math:: x_i = \cos(\pi (2 i - 1) / (2 n))
 
-    .. math:: w_i = \\pi / n
+    .. math:: w_i = \pi / n
 
     """
     deg = int(deg)
@@ -1656,7 +1657,7 @@ def chebgauss(deg):
 def chebweight(x):
     r"""The weight function of the Chebyshev polynomials.
 
-    The weight function is :math:`1/\\sqrt{1 - x^2}` and the interval of
+    The weight function is :math:`1/\sqrt{1 - x^2}` and the interval of
     integration is :math:`[-1, 1]`. The Chebyshev polynomials are
     orthogonal, but not normalized, with respect to this weight function.
 

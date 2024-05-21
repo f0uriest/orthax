@@ -60,6 +60,7 @@ Misc Functions
    poly2herme
 
 """
+
 import functools
 
 import jax
@@ -899,7 +900,7 @@ def hermeval2d(x, y, c):
 
     This function returns the values:
 
-    .. math:: p(x,y) = \\sum_{i,j} c_{i,j} * He_i(x) * He_j(y)
+    .. math:: p(x,y) = \sum_{i,j} c_{i,j} * He_i(x) * He_j(y)
 
     The parameters `x` and `y` are converted to arrays only if they are
     tuples or a lists, otherwise they are treated as a scalars and they
@@ -943,7 +944,7 @@ def hermegrid2d(x, y, c):
 
     This function returns the values:
 
-    .. math:: p(a,b) = \\sum_{i,j} c_{i,j} * H_i(a) * H_j(b)
+    .. math:: p(a,b) = \sum_{i,j} c_{i,j} * H_i(a) * H_j(b)
 
     where the points `(a, b)` consist of all pairs formed by taking
     `a` from `x` and `b` from `y`. The resulting points form a grid with
@@ -991,7 +992,7 @@ def hermeval3d(x, y, z, c):
 
     This function returns the values:
 
-    .. math:: p(x,y,z) = \\sum_{i,j,k} c_{i,j,k} * He_i(x) * He_j(y) * He_k(z)
+    .. math:: p(x,y,z) = \sum_{i,j,k} c_{i,j,k} * He_i(x) * He_j(y) * He_k(z)
 
     The parameters `x`, `y`, and `z` are converted to arrays only if
     they are tuples or a lists, otherwise they are treated as a scalars and
@@ -1037,7 +1038,7 @@ def hermegrid3d(x, y, z, c):
 
     This function returns the values:
 
-    .. math:: p(a,b,c) = \\sum_{i,j,k} c_{i,j,k} * He_i(a) * He_j(b) * He_k(c)
+    .. math:: p(a,b,c) = \sum_{i,j,k} c_{i,j,k} * He_i(a) * He_j(b) * He_k(c)
 
     where the points `(a, b, c)` consist of all triples formed by taking
     `a` from `x`, `b` from `y`, and `c` from `z`. The resulting points form
@@ -1324,7 +1325,7 @@ def hermefit(x, y, deg, rcond=None, full=False, w=None):
     The solution is the coefficients of the HermiteE series `p` that
     minimizes the sum of the weighted squared errors
 
-    .. math:: E = \\sum_j w_j^2 * |y_j - p(x_j)|^2,
+    .. math:: E = \sum_j w_j^2 * |y_j - p(x_j)|^2,
 
     where the :math:`w_j` are the weights. This problem is solved by
     setting up the (typically) overdetermined matrix equation
@@ -1411,7 +1412,7 @@ def hermeroots(c):
 
     Return the roots (a.k.a. "zeros") of the polynomial
 
-    .. math:: p(x) = \\sum_i c[i] * He_i(x).
+    .. math:: p(x) = \sum_i c[i] * He_i(x).
 
     Parameters
     ----------
@@ -1524,8 +1525,8 @@ def hermegauss(deg):
 
     Computes the sample points and weights for Gauss-HermiteE quadrature.
     These sample points and weights will correctly integrate polynomials of
-    degree :math:`2*deg - 1` or less over the interval :math:`[-\\inf, \\inf]`
-    with the weight function :math:`f(x) = \\exp(-x^2/2)`.
+    degree :math:`2*deg - 1` or less over the interval :math:`[-\inf, \inf]`
+    with the weight function :math:`f(x) = \exp(-x^2/2)`.
 
     Parameters
     ----------
@@ -1586,8 +1587,8 @@ def hermegauss(deg):
 def hermeweight(x):
     r"""Weight function of the Hermite_e polynomials.
 
-    The weight function is :math:`\\exp(-x^2/2)` and the interval of
-    integration is :math:`[-\\inf, \\inf]`. the HermiteE polynomials are
+    The weight function is :math:`\exp(-x^2/2)` and the interval of
+    integration is :math:`[-\inf, \inf]`. the HermiteE polynomials are
     orthogonal, but not normalized, with respect to this weight function.
 
     Parameters

@@ -1,4 +1,5 @@
 """orthax: orthogonal polynomial series with JAX."""
+
 from . import (
     _version,
     chebyshev,
