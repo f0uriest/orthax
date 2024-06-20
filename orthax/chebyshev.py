@@ -1648,7 +1648,7 @@ def chebgauss(deg):
     if deg <= 0:
         raise ValueError("deg must be a positive integer")
 
-    x = jnp.cos(jnp.pi * jnp.arange(1, 2 * deg, 2) / (2.0 * deg))
+    x = jnp.cos(jnp.pi * jnp.arange(1, 2 * deg, 2) / (2.0 * deg))[::-1]
     w = jnp.ones(deg) * (jnp.pi / deg)
 
     return x, w

@@ -19,9 +19,16 @@ information can be found in the docstring for the module of interest.
 This package provides functions for operations on each of six different kinds
 of polynomials:
 
+.. automodule:: orthax
+   :no-members:
+   :no-inherited-members:
+   :no-special-members:
+
+
 .. toctree::
    :maxdepth: 1
 
+   api_recurrence
    api_chebyshev
    api_hermite
    api_hermite_e
