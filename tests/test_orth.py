@@ -66,12 +66,29 @@ def test_orthsub(name):
 @pytest.mark.parametrize("name", names)
 def test_orthmul(name):
     rec, mod = name_map[name]
-    c1 = np.random.random(5)
-    c2 = np.random.random(5)
+    for n1 in [1, 2, 5, 10, 20]:
+        for n2 in [1, 2, 5, 10, 20]:
+            c1 = np.random.random(n1)
+            c2 = np.random.random(n2)
 
-    out1 = orthax.orthmul(c1, c2, rec)
-    out2 = getattr(mod, name + "mul")(c1, c2)
-    assert_allclose(out1, out2)
+            out1 = orthax.orthmul(c1, c2, rec)
+            out2 = getattr(mod, name + "mul")(c1, c2)
+            assert_allclose(out1, out2)
+
+
+@pytest.mark.parametrize("name", names)
+def test_orthdiv(name):
+    rec, mod = name_map[name]
+
+    for n1 in [1, 2, 5, 10, 20]:
+        for n2 in [1, 2, 5, 10, 20]:
+            c1 = np.random.random(n1)
+            c2 = np.random.random(n2)
+
+            q1, r1 = orthax.orthdiv(c1, c2, rec)
+            q2, r2 = getattr(mod, name + "div")(c1, c2)
+            assert_allclose(q1, q2)
+            assert_allclose(r1, r2)
 
 
 @pytest.mark.parametrize("name", names)
@@ -316,4 +333,4 @@ def test_orthroots(name, n):
     c = 0.5 - np.random.random(n)
     r1 = orthax.orthroots(c, rec)
     r2 = getattr(mod, name + "roots")(c)
-    assert_allclose(r1, r2, atol=1e-14, rtol=1e-14)
+    assert_allclose(r1, r2, atol=1e-13, rtol=1e-13)

@@ -16,6 +16,7 @@ from ._general import (
     orthadd,
     orthcompanion,
     orthder,
+    orthdiv,
     orthfit,
     orthfromroots,
     orthgauss,

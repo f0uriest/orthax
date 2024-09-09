@@ -95,6 +95,20 @@ __all__ = [
 orthtrim = pu.trimcoef
 
 
+def tridiagmv(d, l, u, x):
+    """Matvec for tridiagonal matrix."""
+    a = u * x[1:]
+    b = d * x
+    c = l * x[:-1]
+    return b.at[:-1].add(a).at[1:].add(c)
+
+
+def last_nonzero(x):
+    """Get index and value of last nonzero element of x"""
+    i = len(x) - 1 - jnp.nonzero(x[::-1], size=1, fill_value=len(x))[0][0]
+    return i, x[i]
+
+
 @jit
 def poly2orth(pol, rec):
     """Convert a polynomial to an orthogonal series.
@@ -324,21 +338,12 @@ def orthmulx(c, rec, mode="full"):
     diagonal = a
     lower_diagonal = upper_diagonal = jnp.sqrt(b[1:])
 
-    f = upper_diagonal * prd[1:]
-    g = diagonal * prd
-    h = lower_diagonal * prd[:-1]
-    prd = g.at[:-1].add(f).at[1:].add(h) / s
+    prd = tridiagmv(diagonal, lower_diagonal, upper_diagonal, prd) / s
+
     if mode == "same":
         prd = prd[: len(c)]
 
     return prd
-
-
-def _nodes_fast(rec, n):
-    nn = jnp.arange(n)
-    a = rec.a[nn].astype(float)
-    b = rec.b[nn].astype(float)
-    return jax.scipy.linalg.eigh_tridiagonal(a, jnp.sqrt(b[1:]), eigvals_only=True)
 
 
 @functools.partial(jit, static_argnames="mode")
@@ -369,24 +374,103 @@ def orthmul(c1, c2, rec, mode="full"):
     --------
     orthadd, orthsub, orthmulx, orthdiv, orthpow
 
+    """
+    # assume c1 is longer, we iterate over c2 so want that shortest
+    if len(c2) > len(c1):
+        c1, c2 = c2, c1
+
+    if len(c2) == 1:
+        return c1 * c2[0]
+
+    # convert coefficients form scaled to monic form
+    # ie f * p_scaled(x) = f*m * p_monic(x)
+    f = c1 * rec.m[jnp.arange(c1.size)]
+    g = c2 * rec.m[jnp.arange(c2.size)]
+
+    # ensure leading coefficient is 1
+    fi, fn = last_nonzero(f)
+    gi, gm = last_nonzero(g)
+    f = f / fn
+    g = g / gm
+
+    # order of polynomials
+    n = len(f) - 1
+    m = len(g) - 1
+    N = n + m
+
+    # elements of jacobi matrix
+    nn = jnp.arange(N)
+    a = rec.a[nn]  # diagonal
+    b = rec.b[nn][1:]  # lower diagonal
+    c = jnp.ones_like(b)  # upper diagonal
+
+    r1 = jnp.pad(f, (0, m - 1))
+    r2 = jnp.zeros_like(r1)
+    u = r1 * g[0]
+
+    def bodyfun(i, state):
+        r1, r2, u = state
+        ri = tridiagmv(a - rec.a[i - 2], c, b, r1) - rec.b[i - 2] * r2
+        u += g[i - 1] * ri
+        r2 = r1
+        r1 = ri
+        return r1, r2, u
+
+    r1, r2, u = jax.lax.fori_loop(2, m + 1, bodyfun, (r1, r2, u))
+
+    ri = tridiagmv(a - rec.a[gi - 1], c, b, r1) - rec.b[gi - 1] * r2
+    u += g[-1] * ri
+    u = jnp.append(u, 0.0)
+    u = u.at[fi + gi].set(1.0)
+
+    # scale by original leading coefficients
+    u *= fn * gm
+    # undo rescaling to monic form
+    u /= rec.m[jnp.arange(N + 1)]
+
+    if mode == "same":
+        u = u[: max(len(c1), len(c2))]
+
+    return u
+
+
+@jit
+def orthdiv(c1, c2, rec):
+    """Divide one orthogonal series by another.
+
+    Returns the quotient-with-remainder of two orthogonal series
+    `c1` / `c2`.  The arguments are sequences of coefficients from lowest
+    order "term" to highest, e.g., [1,2,3] represents the series
+    ``P_0 + 2*P_1 + 3*P_2``.
+
+    Parameters
+    ----------
+    c1, c2 : array_like
+        1-D arrays of orthogonal series coefficients ordered from low to
+        high.
+    rec : AbstractRecurrenceRelation
+        Recurrence relation for the family of orthogonal polynomials.
+
+    Returns
+    -------
+    [quo, rem] : ndarrays
+        Of orthogonal series coefficients representing the quotient and
+        remainder.
+
+    See Also
+    --------
+    orthadd, orthsub, orthmulx, orthdiv, orthpow
+
     Notes
     -----
-    Uses pseudo-spectral method, so results may be inaccurate if the Vandermonde
-    matrix is poorly conditioned.
+    In general, the (polynomial) division of one orthogonal series by another
+    results in quotient and remainder terms that are not in the original
+    polynomial basis set.  Thus, to express these results as an orthogonal
+    series, it is necessary to "reproject" the results onto the original
+    basis set, which may produce "unintuitive" (but correct) results.
 
     """
-    n = len(c1) + len(c2) - 1
-    c1p = jnp.pad(c1, (0, len(c2) - 1))
-    c2p = jnp.pad(c2, (0, len(c1) - 1))
-    x = _nodes_fast(rec, n)
-    A = orthvander(x, n - 1, rec)
-    f1 = A @ c1p
-    f2 = A @ c2p
-    ret = jnp.linalg.solve(A, f1 * f2)
-    if mode == "same":
-        ret = ret[: max(len(c1), len(c2))]
-
-    return ret
+    return pu._div(functools.partial(orthmul, rec=rec), c1, c2)
 
 
 @functools.partial(jit, static_argnames=("pow", "maxpower"))
@@ -460,7 +544,10 @@ def orthval(x, c, rec, tensor=True):
         k = len(c) - i
         c1, c2 = val
         ck_plus1 = c1
-        ck = c[k] * rec.m[k] + (x - rec.a[k]) * c1 - rec.b[k + 1] * c2
+        # on first step c2 is 0 so we don't care about rec.b[k+1], but we don't
+        # want to try to get it to avoid out of bounds errors on tabulated coeffs.
+        bk1 = rec.b[jnp.minimum(k + 1, len(c) - 1)]
+        ck = c[k] * rec.m[k] + (x - rec.a[k]) * c1 - bk1 * c2
         return ck, ck_plus1
 
     c1, c2 = jax.lax.fori_loop(1, len(c), body, (c1, c2))
@@ -1043,8 +1130,8 @@ def differentiation_matrix(rec, n):
     b = rec.b
     m = rec.m
     n += 1
-    nn = jnp.arange(n).astype(float)
-    Q = jnp.diag(nn)
+    nn = jnp.arange(n)
+    Q = jnp.diag(nn.astype(float))
 
     def iloop(i, Q):
         def jloop(j, Q):
@@ -1421,4 +1508,5 @@ def orthroots(c, rec):
     m = orthcompanion(c, rec)[::-1, ::-1]
     r = jnp.linalg.eigvals(m)
     r = jnp.sort(r)
+    # TODO: add newton iterations to improve roots
     return r
