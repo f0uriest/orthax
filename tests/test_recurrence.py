@@ -9,27 +9,41 @@ import orthax
 
 config.update("jax_enable_x64", True)
 
-
-recs = [
-    (orthax.recurrence.LegendreRecurrenceRelation, ()),
-    (orthax.recurrence.ShiftedLegendreRecurrenceRelation, ()),
-    (orthax.recurrence.ChebyshevTRecurrenceRelation, ()),
-    (orthax.recurrence.ChebyshevURecurrenceRelation, ()),
-    (orthax.recurrence.ChebyshevVRecurrenceRelation, ()),
-    (orthax.recurrence.ChebyshevWRecurrenceRelation, ()),
-    (orthax.recurrence.GegenbauerRecurrenceRelation, (0.23,)),
-    (orthax.recurrence.JacobiRecurrenceRelation, (-0.27, 0.64)),
-    (orthax.recurrence.LaguerreRecurrenceRelation, ()),
-    (orthax.recurrence.GeneralizedLaguerreRecurrenceRelation, (2.5,)),
-    (orthax.recurrence.HermiteRecurrenceRelation, ()),
-    (orthax.recurrence.HermiteERecurrenceRelation, ()),
+names = [
+    "leg",
+    "sleg",
+    "chebT",
+    "chebU",
+    "chebV",
+    "chebW",
+    "geg",
+    "jac",
+    "lag",
+    "glag",
+    "herm",
+    "herme",
 ]
+
+recs = {
+    "leg": (orthax.recurrence.LegendreRecurrenceRelation, ()),
+    "sleg": (orthax.recurrence.ShiftedLegendreRecurrenceRelation, ()),
+    "chebT": (orthax.recurrence.ChebyshevTRecurrenceRelation, ()),
+    "chebU": (orthax.recurrence.ChebyshevURecurrenceRelation, ()),
+    "chebV": (orthax.recurrence.ChebyshevVRecurrenceRelation, ()),
+    "chebW": (orthax.recurrence.ChebyshevWRecurrenceRelation, ()),
+    "geg": (orthax.recurrence.GegenbauerRecurrenceRelation, (0.23,)),
+    "jac": (orthax.recurrence.JacobiRecurrenceRelation, (-0.27, 0.64)),
+    "lag": (orthax.recurrence.LaguerreRecurrenceRelation, ()),
+    "glag": (orthax.recurrence.GeneralizedLaguerreRecurrenceRelation, (2.5,)),
+    "herm": (orthax.recurrence.HermiteRecurrenceRelation, ()),
+    "herme": (orthax.recurrence.HermiteERecurrenceRelation, ()),
+}
 
 
 @pytest.mark.parametrize("scale", ["monic", "normalized"])
-@pytest.mark.parametrize("rec", recs)
-def test_generate_recurrence(rec, scale):
-    rec, args = rec
+@pytest.mark.parametrize("name", names)
+def test_generate_recurrence(name, scale):
+    rec, args = recs[name]
     rec1 = rec(*args, scale=scale)
 
     n = 10

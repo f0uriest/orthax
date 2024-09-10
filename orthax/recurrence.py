@@ -805,12 +805,12 @@ def generate_recurrence(weight, domain, n, scale="monic"):
     @jax.jit
     def inner(n, a, b):
         fun = lambda x: polyval(x, n, a, b) ** 2 * weight(x)
-        return quad(fun, domain, epsabs=1e-14, epsrel=1e-14, order=128)
+        return quad(fun, domain, epsabs=1e-15, epsrel=1e-15, order=128, max_ninter=500)
 
     @jax.jit
     def innerx(n, a, b):
         fun = lambda x: x * polyval(x, n, a, b) ** 2 * weight(x)
-        return quad(fun, domain, epsabs=1e-14, epsrel=1e-14, order=128)
+        return quad(fun, domain, epsabs=1e-15, epsrel=1e-15, order=128, max_ninter=500)
 
     @jax.jit
     def polyval(x, n, a, b):
