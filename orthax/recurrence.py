@@ -136,7 +136,7 @@ class TabulatedRecurrenceCoefficient(AbstractRecurrenceCoefficient):
         return jnp.where(k >= 0, self._arr[k], 0)
 
 
-class AbstractRecurrenceRelation(eqx.Module):
+class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
     """Base class for three term recurrence relations.
 
     Parameters
@@ -221,7 +221,7 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
         self.scale = scale
 
 
-class ClassicalRecurrenceRelation(AbstractRecurrenceRelation):
+class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
     """Base class for recurrence relations for "classical" orthogonal polynomials.
 
     Parameters
