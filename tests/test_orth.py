@@ -13,11 +13,11 @@ config.update("jax_enable_x64", True)
 names = ["cheb", "herm", "herme", "lag", "leg"]
 
 name_map = {
-    "cheb": (orthax.recurrence.ChebyshevTRecurrenceRelation(), orthax.chebyshev),
-    "herm": (orthax.recurrence.HermiteRecurrenceRelation(), orthax.hermite),
-    "herme": (orthax.recurrence.HermiteERecurrenceRelation(), orthax.hermite_e),
-    "lag": (orthax.recurrence.LaguerreRecurrenceRelation(), orthax.laguerre),
-    "leg": (orthax.recurrence.LegendreRecurrenceRelation(), orthax.legendre),
+    "cheb": (orthax.recurrence.ChebyshevT(), orthax.chebyshev),
+    "herm": (orthax.recurrence.Hermite(), orthax.hermite),
+    "herme": (orthax.recurrence.HermiteE(), orthax.hermite_e),
+    "lag": (orthax.recurrence.Laguerre(), orthax.laguerre),
+    "leg": (orthax.recurrence.Legendre(), orthax.legendre),
 }
 
 
@@ -279,7 +279,7 @@ def test_orthgauss(name, n):
 
 def test_orthgauss2():
     """Test for Gauss-Radau and Gauss-Lobatto quadrature."""
-    rec = orthax.recurrence.LegendreRecurrenceRelation()
+    rec = orthax.recurrence.Legendre()
 
     # gauss-legendre-lobatto, order 5
     xl = np.array([-1, -np.sqrt(3 / 7), 0, np.sqrt(3 / 7), 1])

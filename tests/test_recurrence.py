@@ -25,18 +25,18 @@ names = [
 ]
 
 recs = {
-    "leg": (orthax.recurrence.LegendreRecurrenceRelation, ()),
-    "sleg": (orthax.recurrence.ShiftedLegendreRecurrenceRelation, ()),
-    "chebT": (orthax.recurrence.ChebyshevTRecurrenceRelation, ()),
-    "chebU": (orthax.recurrence.ChebyshevURecurrenceRelation, ()),
-    "chebV": (orthax.recurrence.ChebyshevVRecurrenceRelation, ()),
-    "chebW": (orthax.recurrence.ChebyshevWRecurrenceRelation, ()),
-    "geg": (orthax.recurrence.GegenbauerRecurrenceRelation, (0.23,)),
-    "jac": (orthax.recurrence.JacobiRecurrenceRelation, (-0.27, 0.64)),
-    "lag": (orthax.recurrence.LaguerreRecurrenceRelation, ()),
-    "glag": (orthax.recurrence.GeneralizedLaguerreRecurrenceRelation, (2.5,)),
-    "herm": (orthax.recurrence.HermiteRecurrenceRelation, ()),
-    "herme": (orthax.recurrence.HermiteERecurrenceRelation, ()),
+    "leg": (orthax.recurrence.Legendre, ()),
+    "sleg": (orthax.recurrence.ShiftedLegendre, ()),
+    "chebT": (orthax.recurrence.ChebyshevT, ()),
+    "chebU": (orthax.recurrence.ChebyshevU, ()),
+    "chebV": (orthax.recurrence.ChebyshevV, ()),
+    "chebW": (orthax.recurrence.ChebyshevW, ()),
+    "geg": (orthax.recurrence.Gegenbauer, (0.23,)),
+    "jac": (orthax.recurrence.Jacobi, (-0.27, 0.64)),
+    "lag": (orthax.recurrence.Laguerre, ()),
+    "glag": (orthax.recurrence.GeneralizedLaguerre, (2.5,)),
+    "herm": (orthax.recurrence.Hermite, ()),
+    "herme": (orthax.recurrence.HermiteE, ()),
 }
 
 

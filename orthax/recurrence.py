@@ -54,18 +54,18 @@ Classical Recurrence Relations
 .. autosummary::
    :toctree: generated/
 
-   LegendreRecurrenceRelation
-   ShiftedLegendreRecurrenceRelation
-   ChebyshevTRecurrenceRelation
-   ChebyshevURecurrenceRelation
-   ChebyshevVRecurrenceRelation
-   ChebyshevWRecurrenceRelation
-   GegenbauerRecurrenceRelation
-   JacobiRecurrenceRelation
-   LaguerreRecurrenceRelation
-   GeneralizedLaguerreRecurrenceRelation
-   HermiteRecurrenceRelation
-   HermiteERecurrenceRelation
+   Legendre
+   ShiftedLegendre
+   ChebyshevT
+   ChebyshevU
+   ChebyshevV
+   ChebyshevW
+   Gegenbauer
+   Jacobi
+   Laguerre
+   GeneralizedLaguerre
+   Hermite
+   HermiteE
 
 Recurrence Coefficients
 -----------------------
@@ -303,7 +303,7 @@ class ClassicalRecurrenceRelation(AbstractRecurrenceRelation):
 # Table 18.3.1, std_scale = k_n, std_norm = sqrt(h_n)
 
 
-class LegendreRecurrenceRelation(ClassicalRecurrenceRelation):
+class Legendre(ClassicalRecurrenceRelation):
     """Recurrence relation for Legendre Polynomials :math:`P_n(x)`
 
     Legendre polynomials are orthogonal on the interval (-1, 1)
@@ -336,7 +336,7 @@ class LegendreRecurrenceRelation(ClassicalRecurrenceRelation):
         )
 
 
-class ShiftedLegendreRecurrenceRelation(ClassicalRecurrenceRelation):
+class ShiftedLegendre(ClassicalRecurrenceRelation):
     """Recurrence relation for Shifted Legendre Polynomials :math:`P^*_n(x)`
 
     Shifted Legendre polynomials are orthogonal on the interval (0, 1)
@@ -369,7 +369,7 @@ class ShiftedLegendreRecurrenceRelation(ClassicalRecurrenceRelation):
         )
 
 
-class ChebyshevTRecurrenceRelation(ClassicalRecurrenceRelation):
+class ChebyshevT(ClassicalRecurrenceRelation):
     """Recurrence relation for Chebyshev polynomials of the first kind :math:`T_n(x)`
 
     Chebyshev polynomials of the first kind are orthogonal on the interval (-1, 1)
@@ -401,7 +401,7 @@ class ChebyshevTRecurrenceRelation(ClassicalRecurrenceRelation):
         return jnp.where(k == 0, 1, 2 ** jnp.maximum(0.0, k - 1.0))
 
 
-class ChebyshevURecurrenceRelation(ClassicalRecurrenceRelation):
+class ChebyshevU(ClassicalRecurrenceRelation):
     """Recurrence relation for Chebyshev polynomials of the second kind :math:`U_n(x)`
 
     Chebyshev polynomials of the second kind are orthogonal on the interval (-1, 1)
@@ -433,7 +433,7 @@ class ChebyshevURecurrenceRelation(ClassicalRecurrenceRelation):
         return 2 ** jnp.asarray(k).astype(float)
 
 
-class ChebyshevVRecurrenceRelation(ClassicalRecurrenceRelation):
+class ChebyshevV(ClassicalRecurrenceRelation):
     """Recurrence relation for Chebyshev polynomials of the third kind :math:`V_n(x)`
 
     Chebyshev polynomials of the third kind are orthogonal on the interval (-1, 1)
@@ -465,7 +465,7 @@ class ChebyshevVRecurrenceRelation(ClassicalRecurrenceRelation):
         return 2 ** jnp.asarray(k).astype(float)
 
 
-class ChebyshevWRecurrenceRelation(ClassicalRecurrenceRelation):
+class ChebyshevW(ClassicalRecurrenceRelation):
     """Recurrence relation for Chebyshev polynomials of the fourth kind :math:`W_n(x)`
 
     Chebyshev polynomials of the fourth kind are orthogonal on the interval (-1, 1)
@@ -497,7 +497,7 @@ class ChebyshevWRecurrenceRelation(ClassicalRecurrenceRelation):
         return 2 ** jnp.asarray(k).astype(float)
 
 
-class GegenbauerRecurrenceRelation(ClassicalRecurrenceRelation):
+class Gegenbauer(ClassicalRecurrenceRelation):
     r"""Recurrence relation for Gegenbauer polynomials :math:`C^\lambda_n(x)`
 
     Also known as Ultraspherical harmonics.
@@ -557,7 +557,7 @@ class GegenbauerRecurrenceRelation(ClassicalRecurrenceRelation):
         )
 
 
-class JacobiRecurrenceRelation(ClassicalRecurrenceRelation):
+class Jacobi(ClassicalRecurrenceRelation):
     r"""Recurrence relation for Jacobi polynomials :math:`P^{(\alpha, \beta)}_n(x)`
 
     Jacobi polynomials are orthogonal on the interval (-1, 1)
@@ -626,7 +626,7 @@ class JacobiRecurrenceRelation(ClassicalRecurrenceRelation):
         return jnp.exp(logm)
 
 
-class LaguerreRecurrenceRelation(ClassicalRecurrenceRelation):
+class Laguerre(ClassicalRecurrenceRelation):
     """Recurrence relation for Laguerre polynomials :math:`L_n(x)`
 
     Laguerre polynomials are orthogonal on the interval (0, inf)
@@ -656,7 +656,7 @@ class LaguerreRecurrenceRelation(ClassicalRecurrenceRelation):
         return (-1) ** k * jnp.exp(-gammaln(k + 1))
 
 
-class GeneralizedLaguerreRecurrenceRelation(ClassicalRecurrenceRelation):
+class GeneralizedLaguerre(ClassicalRecurrenceRelation):
     r"""Recurrence relation for Generalized Laguerre polynomials :math:`L^\alpha_n(x)`
 
     Generalized Laguerre polynomials are orthogonal on the interval (0, inf)
@@ -695,7 +695,7 @@ class GeneralizedLaguerreRecurrenceRelation(ClassicalRecurrenceRelation):
         return (-1) ** k * jnp.exp(-gammaln(k + 1))
 
 
-class HermiteRecurrenceRelation(ClassicalRecurrenceRelation):
+class Hermite(ClassicalRecurrenceRelation):
     """Recurrence relation for (physicists) Hermite polynomials :math:`H_n(x)`
 
     Hermite polynomials are orthogonal on the interval (-inf, inf)
@@ -727,7 +727,7 @@ class HermiteRecurrenceRelation(ClassicalRecurrenceRelation):
         return 2 ** jnp.asarray(k).astype(float)
 
 
-class HermiteERecurrenceRelation(ClassicalRecurrenceRelation):
+class HermiteE(ClassicalRecurrenceRelation):
     """Recurrence relation for (probabalists) Hermite polynomials :math:`He_n(x)`
 
     Hermite polynomials are orthogonal on the interval (-inf, inf)
