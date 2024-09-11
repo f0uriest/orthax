@@ -766,7 +766,28 @@ class HermiteE(ClassicalRecurrenceRelation):
         return jnp.ones_like(k)
 
 
-def generate_recurrence(weight, domain, n, scale="monic"):
+@jax.jit
+def _polyval(x, n, a, b):
+    a, b = map(lambda x: jnp.atleast_1d(jnp.asarray(x)), (a, b))
+    x = jnp.asarray(x)
+
+    p0 = jnp.zeros_like(x)
+    p1 = jnp.ones_like(x)
+    pn = p1
+
+    def body(i, state):
+        p0, p1, pn = state
+        pn = (x - a[i]) * p1 - b[i] * p0
+        p0 = p1
+        p1 = pn
+        return p0, p1, pn
+
+    npos = lambda: jax.lax.fori_loop(0, n, body, (p0, p1, pn))[-1]
+    nneg = lambda: jnp.zeros_like(x)
+    return jax.lax.cond(n >= 0, npos, nneg)
+
+
+def generate_recurrence(weight, domain, n, scale="monic", quadrule=None, quadopts=None):
     r"""Generate recurrence relation coefficients for orthogonal polynomial family.
 
     Finds coefficients :math:`a_i, b_i, g_i` such that
@@ -791,15 +812,26 @@ def generate_recurrence(weight, domain, n, scale="monic"):
         Number of terms to generate, ie, highest order of polynomial desired.
     scale : {"monic", "normalized"}
         How to scale the resulting polynomials.
+    quadrule : quadax.AbstractQuadratureRule, optional
+        Quadrature rule to use for computing integrals in generating recurrence
+        coefficients. Defaults to ``quadax.TanhSinhRule(order=129)``.
+    quadopts : dict, optional
+        Additional options passed to ``quadax.adaptive_quadrature``. Default options
+        are ``epsabs=1e-15``, ``epsrel=1e-15``, ``max_ninter=500``.
 
     Returns
     -------
     rec : TabulatedRecurrenceRelation
         Recurrence relation coefficients and polynomial norms.
 
+    Notes
+    -----
+    Requires the ``quadax`` package to be installed.
+
     """
+    assert scale in ["monic", "normalized"]
     try:
-        from quadax import quadts as quad
+        import quadax
     except ImportError as e:
         raise ImportError(
             "quadax must be installed (use ``pip install quadax``) "
@@ -807,35 +839,23 @@ def generate_recurrence(weight, domain, n, scale="monic"):
         ) from e
 
     # p-adaptive might be better here, or bootstrapped gauss
+    rule = quadrule or quadax.TanhSinhRule(129)
+    opts = quadopts or {}
+    opts.setdefault("epsabs", 1e-15)
+    opts.setdefault("epsrel", 1e-15)
+    opts.setdefault("max_ninter", 500)
+    opts.setdefault("interval", domain)
+    quad = lambda fun: quadax.adaptive_quadrature(rule, fun, **opts)
+
     @jax.jit
     def inner(n, a, b):
-        fun = lambda x: polyval(x, n, a, b) ** 2 * weight(x)
-        return quad(fun, domain, epsabs=1e-15, epsrel=1e-15, order=128, max_ninter=500)
+        fun = lambda x: _polyval(x, n, a, b) ** 2 * weight(x)
+        return quad(fun)
 
     @jax.jit
     def innerx(n, a, b):
-        fun = lambda x: x * polyval(x, n, a, b) ** 2 * weight(x)
-        return quad(fun, domain, epsabs=1e-15, epsrel=1e-15, order=128, max_ninter=500)
-
-    @jax.jit
-    def polyval(x, n, a, b):
-        a, b = map(lambda x: jnp.atleast_1d(jnp.asarray(x)), (a, b))
-        x = jnp.asarray(x)
-
-        p0 = jnp.zeros_like(x)
-        p1 = jnp.ones_like(x)
-        pn = p1
-
-        def body(i, state):
-            p0, p1, pn = state
-            pn = (x - a[i]) * p1 - b[i] * p0
-            p0 = p1
-            p1 = pn
-            return p0, p1, pn
-
-        npos = lambda: jax.lax.fori_loop(0, n, body, (p0, p1, pn))[-1]
-        nneg = lambda: jnp.zeros_like(x)
-        return jax.lax.cond(n >= 0, npos, nneg)
+        fun = lambda x: x * _polyval(x, n, a, b) ** 2 * weight(x)
+        return quad(fun)
 
     def body(i, state):
         aa, bb, cc, errs, status = state
