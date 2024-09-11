@@ -113,6 +113,7 @@ class FunctionRecurrenceCoefficient(AbstractRecurrenceCoefficient):
         self._params = params
 
     def __getitem__(self, k):
+        k = jnp.asarray(k)
         return jnp.where(k >= 0, self._fun(k, *self._params), 0)
 
 
@@ -132,7 +133,11 @@ class TabulatedRecurrenceCoefficient(AbstractRecurrenceCoefficient):
 
     def __getitem__(self, k):
         k = jnp.asarray(k)
-        k = eqx.error_if(k, (k >= len(self._arr)).any(), "out of bounds!")
+        k = eqx.error_if(
+            k,
+            (k >= len(self._arr)).any(),
+            "requested recurrence coefficient outside of tabulated range",
+        )
         return jnp.where(k >= 0, self._arr[k], 0)
 
 
