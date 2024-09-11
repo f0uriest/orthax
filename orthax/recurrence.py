@@ -151,14 +151,12 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
     domain : tuple
         Lower and upper bounds for inner product defining orthogonality.
     a, b : AbstractRecurrenceCoefficient
-        Coefficients of the three term recurrence relation.
+        Coefficients of the monic three term recurrence relation.
     g : AbstractRecurrenceCoefficient
-        ``g[k]`` is the weighted norm of the kth orthogonal polynomial.
+        ``g[k]`` is the weighted norm of the kth monic orthogonal polynomial.
     m : AbstractRecurrenceCoefficient
-        ``m[k]`` is the coefficient of x**k in the kth orthogonal polynomial.
-    scale : {"monic", "normalized"}
-        Whether the a,b coefficients are for the standard "monic" form of the
-        polynomial, or the normalized form.
+        ``m[k]`` is the coefficient of x**k in the kth orthogonal polynomial in the
+        desired normalization. For normalized form, set m = 1/g
 
     """
 
@@ -168,10 +166,8 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
     b: AbstractRecurrenceCoefficient
     g: AbstractRecurrenceCoefficient
     m: AbstractRecurrenceCoefficient
-    scale: str = eqx.field(static=True)
 
-    def __init__(self, weight, domain, a, b, g, m=None, scale="monic"):
-        assert scale in {"monic", "normalized"}
+    def __init__(self, weight, domain, a, b, g, m=None):
         if m is None:
             m = FunctionRecurrenceCoefficient(lambda x: jnp.ones(jnp.asarray(x).shape))
         self.a = a
@@ -180,7 +176,6 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
         self.g = g
         self.weight = weight
         self.domain = domain
-        self.scale = scale
 
 
 class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
@@ -193,14 +188,13 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
     domain : tuple
         Lower and upper bounds for inner product defining orthogonality.
     a, b : jax.Array
-        Coefficients of the three term recurrence relation.
+        Coefficients of the monic three term recurrence relation.
     g : jax.Array
-        ``g[k]`` is the weighted norm of the kth orthogonal polynomial.
+        ``g[k]`` is the weighted norm of the kth monic orthogonal polynomial.
     m : jax.Array
-        ``m[k]`` is the coefficient of x**k in the kth orthogonal polynomial.
-    scale : {"monic", "normalized"}
-        Whether the a,b coefficients are for the standard "monic" form of the
-        polynomial, or the normalized form.
+        ``m[k]`` is the coefficient of x**k in the kth orthogonal polynomial in the
+        desired normalization. Default is 1 (monic form). For normalized form, set
+        m = 1/g
 
     """
 
@@ -209,8 +203,7 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
     gk: jax.Array
     mk: jax.Array
 
-    def __init__(self, weight, domain, ak, bk, gk, mk=None, scale="monic"):
-        assert scale in {"monic", "normalized"}
+    def __init__(self, weight, domain, ak, bk, gk, mk=None):
         if mk is None:
             mk = jnp.ones_like(ak)
         self.ak = ak
@@ -223,7 +216,6 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
         self.m = TabulatedRecurrenceCoefficient(mk)
         self.weight = weight
         self.domain = domain
-        self.scale = scale
 
 
 class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
@@ -246,6 +238,7 @@ class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
     b: FunctionRecurrenceCoefficient = eqx.field(static=True)
     g: FunctionRecurrenceCoefficient = eqx.field(static=True)
     m: FunctionRecurrenceCoefficient = eqx.field(static=True)
+    scale: str = eqx.field(static=True)
 
     def __init__(self, weight, domain, scale="standard"):
         assert scale in {"standard", "monic", "normalized"}
@@ -275,19 +268,12 @@ class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
 
     @abc.abstractmethod
     def _std_scale(self, k):
-        # leading order coefficient in "standard" scaling (ie, AS, wikipedia, etc)
+        # coefficient of x**k in "standard" scaling (ie, AS, wikipedia, etc)
         pass
 
     def _gk(self, k):
-        # norm of kth polynomial in whatever scale is specified by the user,
-        # ie for scale="normalized" this is 1
-        # ie, evaluate normalized polynomials then multiply by g to get scaled version
-        if self.scale == "monic":
-            return self._std_norm(k) / jnp.abs(self._std_scale(k))
-        elif self.scale == "standard":
-            return self._std_norm(k)
-        else:  # normalized
-            return jnp.ones_like(k)
+        # norm of kth polynomial in monic form
+        return self._std_norm(k) / jnp.abs(self._std_scale(k))
 
     def _mk(self, k):
         # scaling factor. polynomials are evaluated in monic form then multiplied
@@ -878,12 +864,10 @@ def generate_recurrence(weight, domain, n, scale="monic", quadrule=None, quadopt
 
     aa, bb, cc, errs, status = jax.lax.fori_loop(0, n, body, (aa, bb, cc, errs, status))
     # TODO: figure out uncertainties better
-    cc = jnp.sqrt(cc)
+    g = jnp.sqrt(cc)
     if scale == "monic":
-        g = cc
-        m = jnp.ones_like(cc)
+        m = jnp.ones_like(g)
     else:  # normalized
-        g = jnp.ones_like(cc)
-        m = 1 / cc
+        m = 1 / g
 
     return TabulatedRecurrenceRelation(weight, domain, aa, bb, g, m)

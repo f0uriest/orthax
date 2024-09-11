@@ -330,15 +330,21 @@ def orthmulx(c, rec, mode="full"):
     n = jnp.arange(len(c) + 1)
     a = rec.a[n]
     b = rec.b[n]
-    s = rec.g[n] * jnp.sign(rec.m[n])
+    m = rec.m[n]
 
     prd = jnp.pad(c, (0, 1))
-    prd *= s
+    # f = c*(m*p) where p is monic polynomial
+    prd *= m  # convert c to monic form
 
     diagonal = a
-    lower_diagonal = upper_diagonal = jnp.sqrt(b[1:])
+    lower_diagonal = b[1:]
+    upper_diagonal = jnp.ones_like(b[1:])
 
-    prd = tridiagmv(diagonal, lower_diagonal, upper_diagonal, prd) / s
+    # multiplying by transpose of monic jacobi matrix, so lower and upper are swapped
+    prd = tridiagmv(diagonal, upper_diagonal, lower_diagonal, prd)
+
+    # convert back to user scale
+    prd /= m
 
     if mode == "same":
         prd = prd[: len(c)]
@@ -1069,7 +1075,7 @@ def orthnorm(n, rec):
        Norm of the nth orthogonal polynomial.
 
     """
-    return rec.g[n]
+    return rec.g[n] * jnp.abs(rec.m[n])
 
 
 @functools.partial(jit, static_argnames=("monic",))
