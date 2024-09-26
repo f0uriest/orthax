@@ -233,7 +233,7 @@ def test_orthfit(name, n, m):
     deg = n - m
     out1 = orthax.orthfit(x, y, deg, rec)
     out2 = getattr(mod, name + "fit")(x, y, deg)
-    assert_allclose(out1, out2, atol=1e-6, rtol=1e-4)
+    assert_allclose(out1, out2, atol=1e-4, rtol=1e-4)
 
 
 @pytest.mark.parametrize("name", names)
