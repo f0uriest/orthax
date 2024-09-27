@@ -1,7 +1,7 @@
 r"""
-==================================================================
-General orthogonal polynomials via three term recurrence relations
-==================================================================
+===============================
+Three Term Recurrence Relations
+===============================
 
 Every family of orthogonal polynomials can be shown to satisfy a three term recurrence
 relation of the form
@@ -15,11 +15,11 @@ relation of the form
     \end{align}
 
 Knowing the coefficients of the recurrence relation :math:`a_i, b_i` along with the
-normalization constants :math:`\gamma_i` such that
+normalization constants :math:`g_i` such that
 
 .. math::
 
-    \int_D p_i(x) p_j(x) w(x) dx = \gamma^2_i \delta_{i,j}
+    \int_D p_i(x) p_j(x) w(x) dx = g^2_i \delta_{i,j}
 
 
 provides all the needed information for performing arithmetic, calculus, and other
@@ -67,15 +67,6 @@ Classical Recurrence Relations
    Hermite
    HermiteE
 
-Recurrence Coefficients
------------------------
-.. autosummary::
-   :toctree: generated/
-
-   AbstractRecurrenceCoefficient
-   FunctionRecurrenceCoefficient
-   TabulatedRecurrenceCoefficient
-
 """
 
 import abc
@@ -86,96 +77,62 @@ import jax.numpy as jnp
 from jax.scipy.special import gammaln
 
 
-class AbstractRecurrenceCoefficient(eqx.Module):
-    """Abstract base class for recurrence relation coefficients."""
-
-    @abc.abstractmethod
-    def __getitem__(self, k):
-        pass
-
-
-class FunctionRecurrenceCoefficient(AbstractRecurrenceCoefficient):
-    """Recurrence coefficient with a known functional form.
-
-    Parameters
-    ----------
-    fun : callable
-        Function of the form fun(k:int, *params)-> float to get kth coefficient.
-    params : tuple
-        Additional parameters passed to fun.
-    """
-
-    _fun: callable = eqx.field(static=True)
-    _params: any
-
-    def __init__(self, fun, params=()):
-        self._fun = fun
-        self._params = params
-
-    def __getitem__(self, k):
-        k = jnp.asarray(k)
-        return jnp.where(k >= 0, self._fun(k, *self._params), 0)
-
-
-class TabulatedRecurrenceCoefficient(AbstractRecurrenceCoefficient):
-    """Precomputed recurrence coefficients as an array.
-
-    Parameters
-    ----------
-    arr : jax.Array
-        Array of tabulated recurrence coefficients.
-    """
-
-    _arr: jax.Array
-
-    def __init__(self, arr):
-        self._arr = arr
-
-    def __getitem__(self, k):
-        k = jnp.asarray(k)
+def _asarray(k, kmax=None):
+    k = jnp.asarray(k)
+    k = eqx.error_if(
+        k,
+        (k < 0).any(),
+        "Negative indices not allowed for recurrence coefficients.",
+    )
+    if kmax is not None:
         k = eqx.error_if(
             k,
-            (k >= len(self._arr)).any(),
-            "requested recurrence coefficient outside of tabulated range",
+            (k > kmax).any(),
+            "Requested recurrence coefficient outside of tabulated range.",
         )
-        return jnp.where(k >= 0, self._arr[k], 0)
+
+    return k
 
 
 class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
     """Base class for three term recurrence relations.
 
-    Parameters
-    ----------
-    weight : callable
-        Weight function.
-    domain : tuple
-        Lower and upper bounds for inner product defining orthogonality.
-    a, b : AbstractRecurrenceCoefficient
-        Coefficients of the monic three term recurrence relation.
-    g : AbstractRecurrenceCoefficient
-        ``g[k]`` is the weighted norm of the kth monic orthogonal polynomial.
-    m : AbstractRecurrenceCoefficient
-        ``m[k]`` is the coefficient of x**k in the kth orthogonal polynomial in the
-        desired normalization. For normalized form, set m = 1/g
-
+    Subclasses should declare attributes `_weight` and `_domain` and implement methods
+    `a`, `b`, `g`, `m`
     """
 
-    weight: callable = eqx.field(static=True)
-    domain: tuple[float, float]
-    a: AbstractRecurrenceCoefficient
-    b: AbstractRecurrenceCoefficient
-    g: AbstractRecurrenceCoefficient
-    m: AbstractRecurrenceCoefficient
+    _weight: callable = eqx.field(static=True)
+    _domain: tuple[float, float]
 
-    def __init__(self, weight, domain, a, b, g, m=None):
-        if m is None:
-            m = FunctionRecurrenceCoefficient(lambda x: jnp.ones(jnp.asarray(x).shape))
-        self.a = a
-        self.b = b
-        self.m = m
-        self.g = g
-        self.weight = weight
-        self.domain = domain
+    @property
+    def weight(self):
+        """callable: Weight function defining inner product."""
+        return self._weight
+
+    @property
+    def domain(self):
+        """tuple: Lower and upper bounds for inner product defining orthogonality."""
+        return self._domain
+
+    @abc.abstractmethod
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        pass
+
+    @abc.abstractmethod
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        pass
+
+    @abc.abstractmethod
+    def g(self, k):
+        """Weighted norm of the kth monic orthogonal polynomial."""
+        pass
+
+    @abc.abstractmethod
+    def m(self, k):
+        """Coefficient of x**k in the kth polynomial in the desired normalization."""
+        pass
 
 
 class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
@@ -198,24 +155,40 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
 
     """
 
-    ak: jax.Array
-    bk: jax.Array
-    gk: jax.Array
-    mk: jax.Array
+    _ak: jax.Array
+    _bk: jax.Array
+    _gk: jax.Array
+    _mk: jax.Array
 
     def __init__(self, weight, domain, ak, bk, gk, mk=None):
         if mk is None:
             mk = jnp.ones_like(ak)
-        self.ak = ak
-        self.bk = bk
-        self.gk = gk
-        self.mk = mk
-        self.a = TabulatedRecurrenceCoefficient(ak)
-        self.b = TabulatedRecurrenceCoefficient(bk)
-        self.g = TabulatedRecurrenceCoefficient(gk)
-        self.m = TabulatedRecurrenceCoefficient(mk)
-        self.weight = weight
-        self.domain = domain
+        self._ak = ak
+        self._bk = bk
+        self._gk = gk
+        self._mk = mk
+        self._weight = weight
+        self._domain = domain
+
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k, kmax=len(self._ak) - 1)
+        return self._ak[k]
+
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k, kmax=len(self._bk) - 1)
+        return self._bk[k]
+
+    def g(self, k):
+        """Weighted norm of the kth monic orthogonal polynomial."""
+        k = _asarray(k, kmax=len(self._gk) - 1)
+        return self._gk[k]
+
+    def m(self, k):
+        """Coefficient of x**k in the kth polynomial in the desired normalization."""
+        k = _asarray(k, kmax=len(self._mk) - 1)
+        return self._mk[k]
 
 
 class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
@@ -234,32 +207,14 @@ class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
         Abramowitz & Stegun. Alternatively, they can be scaled to be monic or unit norm.
     """
 
-    a: FunctionRecurrenceCoefficient = eqx.field(static=True)
-    b: FunctionRecurrenceCoefficient = eqx.field(static=True)
-    g: FunctionRecurrenceCoefficient = eqx.field(static=True)
-    m: FunctionRecurrenceCoefficient = eqx.field(static=True)
-    scale: str = eqx.field(static=True)
+    _scale: str = eqx.field(static=True)
 
     def __init__(self, weight, domain, scale="standard"):
         assert scale in {"standard", "monic", "normalized"}
 
-        self.a = FunctionRecurrenceCoefficient(self._ak)
-        self.b = FunctionRecurrenceCoefficient(self._bk)
-        self.g = FunctionRecurrenceCoefficient(self._gk)
-        self.m = FunctionRecurrenceCoefficient(self._mk)
-        self.weight = weight
-        self.domain = domain
-        self.scale = scale
-
-    @abc.abstractmethod
-    def _ak(self, k):
-        # alpha coefficients of monic recurrence relation
-        pass
-
-    @abc.abstractmethod
-    def _bk(self, k):
-        # beta coefficients of monic recurrence relation
-        pass
+        self._weight = weight
+        self._domain = domain
+        self._scale = scale
 
     @abc.abstractmethod
     def _std_norm(self, k):
@@ -271,20 +226,24 @@ class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
         # coefficient of x**k in "standard" scaling (ie, AS, wikipedia, etc)
         pass
 
-    def _gk(self, k):
-        # norm of kth polynomial in monic form
+    def g(self, k):
+        """Weighted norm of the kth monic orthogonal polynomial."""
+        k = _asarray(k)
         return self._std_norm(k) / jnp.abs(self._std_scale(k))
 
-    def _mk(self, k):
+    def m(self, k):
+        """Coefficient of x**k in the kth polynomial in the desired normalization."""
         # scaling factor. polynomials are evaluated in monic form then multiplied
         # by this scale factor
         # ie, evaluate monic polynomials then multiply by m to get scaled version
-        if self.scale == "monic":
-            return jnp.ones_like(k)
-        elif self.scale == "standard":
-            return self._std_scale(k)
+        k = _asarray(k)
+        if self._scale == "monic":
+            out = jnp.ones_like(k)
+        elif self._scale == "standard":
+            out = self._std_scale(k)
         else:  # normalized
-            return self._std_scale(k) / self._std_norm(k)
+            out = self._std_scale(k) / self._std_norm(k)
+        return out
 
 
 # General notes:
@@ -311,12 +270,15 @@ class Legendre(ClassicalRecurrenceRelation):
     def __init__(self, scale="standard"):
         super().__init__(weight=lambda x: jnp.ones_like(x), domain=(-1, 1), scale=scale)
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.zeros_like(k)
 
-    def _bk(self, k):
-        k = jnp.asarray(k, dtype=jnp.result_type(k, 1.0))
-        return jnp.where(k == 0, 2, 1 / (4 - k ** (-2)))
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
+        return jnp.where(k == 0, 2, 1 / (4 - 1 / jnp.where(k == 0, 1, k) ** 2))
 
     def _std_norm(self, k):
         return jnp.sqrt(2 / (2 * k + 1))
@@ -344,12 +306,15 @@ class ShiftedLegendre(ClassicalRecurrenceRelation):
     def __init__(self, scale="standard"):
         super().__init__(weight=lambda x: jnp.ones_like(x), domain=(0, 1), scale=scale)
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return 0.5 * jnp.ones_like(k)
 
-    def _bk(self, k):
-        k = jnp.asarray(k, dtype=jnp.result_type(k, 1.0))
-        return jnp.where(k == 0, 1, 1 / (4 * (4 - k ** (-2))))
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
+        return jnp.where(k == 0, 1, 0.25 / (4 - 1 / jnp.where(k == 0, 1, k) ** 2))
 
     def _std_norm(self, k):
         return jnp.sqrt(1 / (2 * k + 1))
@@ -379,10 +344,14 @@ class ChebyshevT(ClassicalRecurrenceRelation):
             weight=lambda x: 1.0 / jnp.sqrt(1 - x**2), domain=(-1, 1), scale=scale
         )
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.zeros_like(k)
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, jnp.pi, jnp.where(k == 1, 1 / 2, 1 / 4))
 
     def _std_norm(self, k):
@@ -411,10 +380,14 @@ class ChebyshevU(ClassicalRecurrenceRelation):
             weight=lambda x: jnp.sqrt(1 - x**2), domain=(-1, 1), scale=scale
         )
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.zeros_like(k)
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, jnp.pi / 2, 1 / 4)
 
     def _std_norm(self, k):
@@ -443,10 +416,14 @@ class ChebyshevV(ClassicalRecurrenceRelation):
             weight=lambda x: jnp.sqrt((1 + x) / (1 - x)), domain=(-1, 1), scale=scale
         )
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, 0.5, 0)
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, jnp.pi, 1 / 4)
 
     def _std_norm(self, k):
@@ -475,10 +452,14 @@ class ChebyshevW(ClassicalRecurrenceRelation):
             weight=lambda x: jnp.sqrt((1 - x) / (1 + x)), domain=(-1, 1), scale=scale
         )
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, -0.5, 0)
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, jnp.pi, 1 / 4)
 
     def _std_norm(self, k):
@@ -516,10 +497,14 @@ class Gegenbauer(ClassicalRecurrenceRelation):
             scale=scale,
         )
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.zeros_like(k)
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         b0 = jnp.sqrt(jnp.pi) * jnp.exp(
             gammaln(self.lmbda + 0.5) - gammaln(self.lmbda + 1)
         )
@@ -527,8 +512,7 @@ class Gegenbauer(ClassicalRecurrenceRelation):
         bkden = jnp.where(
             self.lmbda == 0, 4, (4 * (k + self.lmbda) * (k + self.lmbda - 1))
         )
-        bk = bknum / bkden
-        return jnp.where(k == 0, b0, bk)
+        return jnp.where(k == 0, b0, bknum / jnp.where(k == 0, 1, bkden))
 
     def _std_norm(self, k):
         lognum = (
@@ -576,13 +560,17 @@ class Jacobi(ClassicalRecurrenceRelation):
             scale=scale,
         )
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         a, b = self.alpha, self.beta
         num = jnp.where(k == 0, b - a, b**2 - a**2)
         den = jnp.where(k == 0, a + b + 2, (2 * k + a + b) * (2 * k + a + b + 2))
         return num / den
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         a, b = self.alpha, self.beta
         b0 = jnp.exp(
             (a + b + 1) * jnp.log(2)
@@ -634,10 +622,14 @@ class Laguerre(ClassicalRecurrenceRelation):
     def __init__(self, scale="standard"):
         super().__init__(weight=lambda x: jnp.exp(-x), domain=(0, jnp.inf), scale=scale)
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return 2 * k + 1
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, 1, k**2)
 
     def _std_norm(self, k):
@@ -673,10 +665,14 @@ class GeneralizedLaguerre(ClassicalRecurrenceRelation):
             scale=scale,
         )
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return 2 * k + self.alpha + 1
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, jnp.exp(gammaln(self.alpha + 1)), k * (k + self.alpha))
 
     def _std_norm(self, k):
@@ -705,10 +701,14 @@ class Hermite(ClassicalRecurrenceRelation):
             weight=lambda x: jnp.exp(-(x**2)), domain=(-jnp.inf, jnp.inf), scale=scale
         )
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.zeros_like(k)
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, jnp.sqrt(jnp.pi), k / 2)
 
     def _std_norm(self, k):
@@ -739,10 +739,14 @@ class HermiteE(ClassicalRecurrenceRelation):
             scale=scale,
         )
 
-    def _ak(self, k):
+    def a(self, k):
+        """`a` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.zeros_like(k)
 
-    def _bk(self, k):
+    def b(self, k):
+        """`b` coefficients of the monic three term recurrence relation."""
+        k = _asarray(k)
         return jnp.where(k == 0, jnp.sqrt(2 * jnp.pi), k)
 
     def _std_norm(self, k):

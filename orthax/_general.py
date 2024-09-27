@@ -328,9 +328,9 @@ def orthmulx(c, rec, mode="full"):
         Array representing the result of the multiplication.
     """
     n = jnp.arange(len(c) + 1)
-    a = rec.a[n]
-    b = rec.b[n]
-    m = rec.m[n]
+    a = rec.a(n)
+    b = rec.b(n)
+    m = rec.m(n)
 
     prd = jnp.pad(c, (0, 1))
     # f = c*(m*p) where p is monic polynomial
@@ -390,8 +390,8 @@ def orthmul(c1, c2, rec, mode="full"):
 
     # convert coefficients form scaled to monic form
     # ie f * p_scaled(x) = f*m * p_monic(x)
-    f = c1 * rec.m[jnp.arange(c1.size)]
-    g = c2 * rec.m[jnp.arange(c2.size)]
+    f = c1 * rec.m(jnp.arange(c1.size))
+    g = c2 * rec.m(jnp.arange(c2.size))
 
     # ensure leading coefficient is 1
     fi, fn = last_nonzero(f)
@@ -406,8 +406,8 @@ def orthmul(c1, c2, rec, mode="full"):
 
     # elements of jacobi matrix
     nn = jnp.arange(N)
-    a = rec.a[nn]  # diagonal
-    b = rec.b[nn][1:]  # lower diagonal
+    a = rec.a(nn)  # diagonal
+    b = rec.b(nn)[1:]  # lower diagonal
     c = jnp.ones_like(b)  # upper diagonal
 
     r1 = jnp.pad(f, (0, m - 1))
@@ -416,7 +416,7 @@ def orthmul(c1, c2, rec, mode="full"):
 
     def bodyfun(i, state):
         r1, r2, u = state
-        ri = tridiagmv(a - rec.a[i - 2], c, b, r1) - rec.b[i - 2] * r2
+        ri = tridiagmv(a - rec.a(i - 2), c, b, r1) - rec.b(i - 2) * r2
         u += g[i - 1] * ri
         r2 = r1
         r1 = ri
@@ -424,7 +424,7 @@ def orthmul(c1, c2, rec, mode="full"):
 
     r1, r2, u = jax.lax.fori_loop(2, m + 1, bodyfun, (r1, r2, u))
 
-    ri = tridiagmv(a - rec.a[gi - 1], c, b, r1) - rec.b[gi - 1] * r2
+    ri = tridiagmv(a - rec.a(gi - 1), c, b, r1) - rec.b(gi - 1) * r2
     u += g[-1] * ri
     u = jnp.append(u, 0.0)
     u = u.at[fi + gi].set(1.0)
@@ -432,7 +432,7 @@ def orthmul(c1, c2, rec, mode="full"):
     # scale by original leading coefficients
     u *= fn * gm
     # undo rescaling to monic form
-    u /= rec.m[jnp.arange(N + 1)]
+    u /= rec.m(jnp.arange(N + 1))
 
     if mode == "same":
         u = u[: max(len(c1), len(c2))]
@@ -550,17 +550,17 @@ def orthval(x, c, rec, tensor=True):
         k = len(c) - i
         c1, c2 = val
         ck_plus1 = c1
-        # on first step c2 is 0 so we don't care about rec.b[k+1], but we don't
+        # on first step c2 is 0 so we don't care about rec.b(k+1), but we don't
         # want to try to get it to avoid out of bounds errors on tabulated coeffs.
-        bk1 = rec.b[jnp.minimum(k + 1, len(c) - 1)]
-        ck = c[k] * rec.m[k] + (x - rec.a[k]) * c1 - bk1 * c2
+        bk1 = rec.b(jnp.minimum(k + 1, len(c) - 1))
+        ck = c[k] * rec.m(k) + (x - rec.a(k)) * c1 - bk1 * c2
         return ck, ck_plus1
 
     c1, c2 = jax.lax.fori_loop(1, len(c), body, (c1, c2))
 
     p0 = 1
-    p1 = (x - rec.a[0]) * p0
-    return p0 * c[0] * rec.m[0] + p1 * c1 - rec.b[1] * p0 * c2
+    p1 = (x - rec.a(0)) * p0
+    return p0 * c[0] * rec.m(0) + p1 * c1 - rec.b(1) * p0 * c2
 
 
 @jit
@@ -809,18 +809,18 @@ def orthvander(x, deg, rec):
     # easiest to evaluate in monic form then scale at the end
     v = v.at[0].set(jnp.ones_like(x))
     if deg > 0:
-        v = v.at[1].set(x - rec.a[0])
+        v = v.at[1].set(x - rec.a(0))
 
         def body(i, v):
             p0 = v[i - 2]
             p1 = v[i - 1]
-            pn = (x - rec.a[i - 1]) * p1 - rec.b[i - 1] * p0
+            pn = (x - rec.a(i - 1)) * p1 - rec.b(i - 1) * p0
             v = v.at[i].set(pn)
             return v
 
         v = jax.lax.fori_loop(2, deg + 1, body, v)
 
-    return jnp.moveaxis(v, 0, -1) * rec.m[jnp.arange(deg + 1)]
+    return jnp.moveaxis(v, 0, -1) * rec.m(jnp.arange(deg + 1))
 
 
 @functools.partial(jit, static_argnames=("deg",))
@@ -1075,7 +1075,7 @@ def orthnorm(n, rec):
        Norm of the nth orthogonal polynomial.
 
     """
-    return rec.g[n] * jnp.abs(rec.m[n])
+    return rec.g(n) * jnp.abs(rec.m(n))
 
 
 @functools.partial(jit, static_argnames=("monic",))
@@ -1104,7 +1104,7 @@ def polyval(x, n, rec, monic=False):
 
     def body(i, state):
         p0, p1, pn = state
-        pn = (x - rec.a[i]) * p1 - rec.b[i] * p0
+        pn = (x - rec.a(i)) * p1 - rec.b(i) * p0
         p0 = p1
         p1 = pn
         return p0, p1, pn
@@ -1113,7 +1113,7 @@ def polyval(x, n, rec, monic=False):
     nneg = lambda: jnp.zeros_like(x)
     out = jax.lax.cond(n >= 0, npos, nneg)
     if not monic:
-        out *= rec.m[n]
+        out *= rec.m(n)
     return out
 
 
@@ -1141,17 +1141,19 @@ def differentiation_matrix(rec, n):
 
     def iloop(i, Q):
         def jloop(j, Q):
-            Q = Q.at[i, j].add((a[j - 1] - a[i - 1]) * Q[i - 1, j])
+            im1 = jnp.maximum(i - 1, 0)
+            jm1 = jnp.maximum(j - 1, 0)
+            Q = Q.at[i, j].add(((j > 0) * a(jm1) - (i > 0) * a(im1)) * Q[i - 1, j])
             Q = Q.at[i, j].add((j > 1) * Q[i - 1, j - 1])
-            Q = Q.at[i, j].add(b[j] * Q[i - 1, j + 1])
-            Q = Q.at[i, j].add(-1 * (i > 1) * b[i - 1] * Q[i - 2, j])
+            Q = Q.at[i, j].add(b(j) * Q[i - 1, j + 1])
+            Q = Q.at[i, j].add(-1 * (i > 1) * b(im1) * Q[i - 2, j])
             return Q
 
         return jax.lax.fori_loop(0, i, jloop, Q)
 
     Q = jax.lax.fori_loop(0, n, iloop, Q)
     D = jnp.pad(Q[1:, 1:], ((1, 0), (0, 1))).T
-    D = 1 / m[nn][:, None] * D * m[nn]
+    D = 1 / m(nn)[:, None] * D * m(nn)
     return D
 
 
@@ -1365,8 +1367,8 @@ def jacobi_matrix(rec, n):
         Jacobi matrix.
     """
     nn = jnp.arange(n)
-    a = rec.a[nn]
-    b = rec.b[nn]
+    a = rec.a(nn)
+    b = rec.b(nn)
     return (
         jnp.diag(a) + jnp.diag(jnp.sqrt(b[1:]), k=1) + jnp.diag(jnp.sqrt(b[1:]), k=-1)
     )
@@ -1399,18 +1401,18 @@ def orthgauss(deg, rec, x0=None, x1=None):
     if x0 is not None:
         x0 = jnp.asarray(x0).astype(float)
         J = jnp.pad(J, ((0, 1), (0, 1)))
-        J = J.at[n, n - 1].set(jnp.sqrt(rec.b[n]))
-        J = J.at[n - 1, n].set(jnp.sqrt(rec.b[n]))
+        J = J.at[n, n - 1].set(jnp.sqrt(rec.b(n)))
+        J = J.at[n - 1, n].set(jnp.sqrt(rec.b(n)))
         if x1 is None:
             # gauss radau
-            astar = x0 - rec.b[n] * polyval(x0, n - 1, rec, True) / polyval(
+            astar = x0 - rec.b(n) * polyval(x0, n - 1, rec, True) / polyval(
                 x0, n, rec, True
             )
             J = J.at[n, n].set(astar)
         else:
             # gauss lobatto
             x1 = jnp.asarray(x1).astype(float)
-            J = J.at[n, n].set(rec.a[n])
+            J = J.at[n, n].set(rec.a(n))
             mat = jnp.array(
                 [
                     [polyval(x0, n + 1, rec, True), polyval(x0, n, rec, True)],
@@ -1428,7 +1430,7 @@ def orthgauss(deg, rec, x0=None, x1=None):
     else:
         assert x1 is None
     x, v = jnp.linalg.eigh(J)
-    w = rec.b[0] * v[0] ** 2
+    w = rec.b(0) * v[0] ** 2
     return x, w
 
 
@@ -1457,13 +1459,13 @@ def orthcompanion(c, rec):
 
     nn = jnp.arange(len(c))
     # convert to monic form
-    c = c * rec.m[nn]
+    c = c * rec.m(nn)
     c = c / c[-1]  # divide out leading coeff
     # based on
     # "A companion matrix analogue for orthogonal polynomials", S. Barnett, 1975
 
-    a = rec.a[nn]
-    b = rec.b[nn]
+    a = rec.a(nn)
+    b = rec.b(nn)
     alpha = jnp.ones_like(a)
     beta = -a
     gamma = b

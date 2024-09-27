@@ -53,7 +53,7 @@ def test_generate_recurrence(name, scale):
 
     nn = np.arange(n)
 
-    assert_allclose(rec1.a[nn], rec2.a[nn], atol=1e-8, rtol=1e-8)
-    assert_allclose(rec1.b[nn], rec2.b[nn], atol=1e-8, rtol=1e-8)
-    assert_allclose(rec1.g[nn], rec2.g[nn], atol=1e-8, rtol=1e-8)
-    assert_allclose(abs(rec1.m[nn]), abs(rec2.m[nn]), atol=1e-8, rtol=1e-8)
+    assert_allclose(rec1.a(nn), rec2.a(nn), atol=1e-8, rtol=1e-8)
+    assert_allclose(rec1.b(nn), rec2.b(nn), atol=1e-8, rtol=1e-8)
+    assert_allclose(rec1.g(nn), rec2.g(nn), atol=1e-8, rtol=1e-8)
+    assert_allclose(abs(rec1.m(nn)), abs(rec2.m(nn)), atol=1e-8, rtol=1e-8)

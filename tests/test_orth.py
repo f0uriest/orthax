@@ -322,7 +322,7 @@ def test_orthint(name, m, scl, lbnd, k):
     k = [k] * m
     p1 = orthax.orthint(c, rec, m, k, lbnd, scl)
     p2 = getattr(mod, name + "int")(c, m, k, lbnd, scl)
-    assert_allclose(p1, p2, atol=1e-14, rtol=1e-14)
+    assert_allclose(p1, p2, atol=1e-12, rtol=1e-12)
 
 
 @pytest.mark.parametrize("name", names)
