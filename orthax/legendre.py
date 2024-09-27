@@ -56,6 +56,7 @@ Misc Functions
    legvander3d
    leggauss
    legweight
+   legnorm
    legcompanion
    legfit
    legtrim
@@ -64,6 +65,7 @@ Misc Functions
    poly2leg
 
 """
+
 import functools
 
 import jax
@@ -918,7 +920,7 @@ def legval2d(x, y, c):
 
     This function returns the values:
 
-    .. math:: p(x,y) = \\sum_{i,j} c_{i,j} * L_i(x) * L_j(y)
+    .. math:: p(x,y) = \sum_{i,j} c_{i,j} * L_i(x) * L_j(y)
 
     The parameters `x` and `y` are converted to arrays only if they are
     tuples or a lists, otherwise they are treated as a scalars and they
@@ -962,7 +964,7 @@ def leggrid2d(x, y, c):
 
     This function returns the values:
 
-    .. math:: p(a,b) = \\sum_{i,j} c_{i,j} * L_i(a) * L_j(b)
+    .. math:: p(a,b) = \sum_{i,j} c_{i,j} * L_i(a) * L_j(b)
 
     where the points `(a, b)` consist of all pairs formed by taking
     `a` from `x` and `b` from `y`. The resulting points form a grid with
@@ -1010,7 +1012,7 @@ def legval3d(x, y, z, c):
 
     This function returns the values:
 
-    .. math:: p(x,y,z) = \\sum_{i,j,k} c_{i,j,k} * L_i(x) * L_j(y) * L_k(z)
+    .. math:: p(x,y,z) = \sum_{i,j,k} c_{i,j,k} * L_i(x) * L_j(y) * L_k(z)
 
     The parameters `x`, `y`, and `z` are converted to arrays only if
     they are tuples or a lists, otherwise they are treated as a scalars and
@@ -1056,7 +1058,7 @@ def leggrid3d(x, y, z, c):
 
     This function returns the values:
 
-    .. math:: p(a,b,c) = \\sum_{i,j,k} c_{i,j,k} * L_i(a) * L_j(b) * L_k(c)
+    .. math:: p(a,b,c) = \sum_{i,j,k} c_{i,j,k} * L_i(a) * L_j(b) * L_k(c)
 
     where the points `(a, b, c)` consist of all triples formed by taking
     `a` from `x`, `b` from `y`, and `c` from `z`. The resulting points form
@@ -1336,7 +1338,7 @@ def legfit(x, y, deg, rcond=None, full=False, w=None):
     The solution is the coefficients of the Legendre series `p` that
     minimizes the sum of the weighted squared errors
 
-    .. math:: E = \\sum_j w_j^2 * |y_j - p(x_j)|^2,
+    .. math:: E = \sum_j w_j^2 * |y_j - p(x_j)|^2,
 
     where :math:`w_j` are the weights. This problem is solved by setting up
     as the (typically) overdetermined matrix equation
@@ -1410,7 +1412,7 @@ def legroots(c):
 
     Return the roots (a.k.a. "zeros") of the polynomial
 
-    .. math:: p(x) = \\sum_i c[i] * L_i(x).
+    .. math:: p(x) = \sum_i c[i] * L_i(x).
 
     Parameters
     ----------
@@ -1549,3 +1551,27 @@ def legweight(x):
     """
     w = jnp.ones_like(x)
     return w
+
+
+@jit
+def legnorm(n):
+    r"""Norm of nth Legendre polynomial.
+
+    The norm :math:`\gamma_n` is defined such that
+
+    :math:`\int_{-1}^{1} P_n^2(x) dx = \gamma_n^2`
+
+    With this definition :math:`\gamma_n^2 = 2/(2n+1)`
+
+    Parameters
+    ----------
+    n : int
+       Order of Legendre polynomial.
+
+    Returns
+    -------
+    gamma_n : float
+       Norm of the nth Legendre polynomial.
+
+    """
+    return jnp.sqrt(2 / (2 * n + 1))

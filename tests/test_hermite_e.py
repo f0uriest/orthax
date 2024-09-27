@@ -1,4 +1,5 @@
 """Tests for hermite_e module."""
+
 from functools import reduce
 
 import numpy as np

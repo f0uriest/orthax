@@ -17,6 +17,7 @@ Functions
    mapparms     parameters of the linear map between domains.
 
 """
+
 import functools
 import operator
 

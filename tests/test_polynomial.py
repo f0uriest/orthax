@@ -1,4 +1,5 @@
 """Tests for polynomial module."""
+
 from functools import reduce
 
 import numpy as np
