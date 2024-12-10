@@ -56,7 +56,6 @@ Misc Functions
 
 """
 
-
 from . import (
     _version,
     chebyshev,
