@@ -1,7 +1,7 @@
 # standard install requirements
 -r ./requirements.txt
 
-quadax >= 0.2.2, <= 0.2.5
+quadax >= 0.2.2, <= 0.2.6
 
 # building the docs
 sphinx >= 3.0.0, <= 8.2.0
