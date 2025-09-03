@@ -706,3 +706,46 @@ def _pad_along_axis(array, pad=(0, 0), axis=0):
 
     array = jnp.pad(array, pad_width=npad, mode="constant", constant_values=0)
     return jnp.moveaxis(array, 0, axis)
+
+
+def format_float(x, parens=False):
+    if not np.issubdtype(type(x), np.floating):
+        return str(x)
+
+    opts = np.get_printoptions()
+
+    if np.isnan(x):
+        return opts["nanstr"]
+    elif np.isinf(x):
+        return opts["infstr"]
+
+    exp_format = False
+    if x != 0:
+        a = np.abs(x)
+        if a >= 1.0e8 or a < 10 ** min(0, -(opts["precision"] - 1) // 2):
+            exp_format = True
+
+    trim, unique = "0", True
+    if opts["floatmode"] == "fixed":
+        trim, unique = "k", False
+
+    if exp_format:
+        s = np._core.multiarray.dragon4_scientific(
+            x,
+            precision=opts["precision"],
+            unique=unique,
+            trim=trim,
+            sign=opts["sign"] == "+",
+        )
+        if parens:
+            s = "(" + s + ")"
+    else:
+        s = np._core_.multiarray.dragon4_positional(
+            x,
+            precision=opts["precision"],
+            fractional=True,
+            unique=unique,
+            trim=trim,
+            sign=opts["sign"] == "+",
+        )
+    return s
