@@ -980,29 +980,34 @@ def chebval(x, c, tensor=True):
 
     """
     c = pu.as_series(c)
-    x = jnp.asarray(x)
-    if tensor:
+    if isinstance(x, (tuple, list)):
+        x = jnp.asarray(x)
+    if isinstance(x, jnp.ndarray) and tensor:
         c = c.reshape(c.shape + (1,) * x.ndim)
 
+    # x may be an array or an object that implements scalar multiplication
+    # and addition, e.g. a Polynomial
     if len(c) == 1:
-        c0 = c[0]
-        c1 = 0
+        return c[0] + 0 * x # return type(x),
     elif len(c) == 2:
-        c0 = c[0]
-        c1 = c[1]
-    else:
-        x2 = 2 * x
-        c0 = c[-2] * jnp.ones_like(x)
-        c1 = c[-1] * jnp.ones_like(x)
+        return c[0] + c[1] * x
 
-        def body(i, val):
-            c0, c1 = val
-            tmp = c0
-            c0 = c[-i] - c1
-            c1 = tmp + c1 * x2
-            return c0, c1
+    x2 = 2 * x # type(x)
+    c0 = c[-2] # scalar
+    c1 = c[-1] # scalar
 
-        c0, c1 = jax.lax.fori_loop(3, len(c) + 1, body, (c0, c1))
+    def body(i, val):
+        c0, c1 = val
+        tmp = c0
+        c0 = c[-i] - c1
+        c1 = tmp + c1 * x2 # c1 becomes type(x)
+        return c0, c1
+
+    c0, c1 = body(3, (c0, c1)) # c1 becomes type(x)
+    if len(c) > 3:
+        c0, c1 = body(4, (c0, c1)) #c0 becomes type(x)
+        # now types are stable and we can loop:
+        c0, c1 = jax.lax.fori_loop(5, len(c) + 1, body, (c0, c1))
 
     return c0 + c1 * x
 
