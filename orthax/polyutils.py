@@ -719,6 +719,10 @@ def _pad_along_axis(array, pad=(0, 0), axis=0):
 
 
 def format_float(x, parens=False):
+    try:
+        x = x.item()
+    except AttributeError:
+        pass
     if not jnp.issubdtype(type(x), jnp.floating):
         return str(x)
 
@@ -750,7 +754,7 @@ def format_float(x, parens=False):
         if parens:
             s = "(" + s + ")"
     else:
-        s = np._core_.multiarray.dragon4_positional(
+        s = np._core.multiarray.dragon4_positional(
             x,
             precision=opts["precision"],
             fractional=True,

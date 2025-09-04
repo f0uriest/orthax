@@ -13,6 +13,7 @@ import os
 from collections.abc import Callable
 
 from jax import numpy as jnp
+import numpy as np
 
 from . import polyutils as pu
 
@@ -321,9 +322,9 @@ class ABCPolyBase(ABC):
         self._symbol = symbol
 
     def __repr__(self):
-        coef = repr(self.coef)[6:-1]
-        domain = repr(self.domain)[6:-1]
-        window = repr(self.window)[6:-1]
+        coef = repr([x.item() for x in self.coef])
+        domain = repr([x.item() for x in self.domain])
+        window = repr([x.item() for x in self.window])
         name = self.__class__.__name__
         return (
             f"{name}({coef}, domain={domain}, window={window}, "
@@ -459,7 +460,7 @@ class ABCPolyBase(ABC):
         mute = r"\color{{LightGray}}{{{}}}".format
 
         parts = []
-        for i, c in enumerate(self.coef):
+        for i, c in enumerate(np.array(self.coef)):
             # prevent duplication of + and - signs
             if i == 0:
                 coef_str = f"{self._repr_latex_scalar(c)}"
