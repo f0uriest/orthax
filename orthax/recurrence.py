@@ -101,9 +101,9 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
     `a`, `b`, `g`, `m`
     """
 
-    _basis_name: str = "P"
     _weight: callable = eqx.field(static=True)
     _domain: tuple[float, float]
+    _basis_name: str = "P"
 
     @property
     def weight(self):
