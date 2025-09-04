@@ -1196,10 +1196,10 @@ class ABCPolyBase(ABC):
         return series.convert(domain, cls, window)
 
     def tree_flatten(self):
-        aux_data = (self.window, self.domain)
+        aux_data = (self.window, self.domain, self.symbol)
         return (self.coef, aux_data)
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
-        window, domain = aux_data
-        return cls(children, window=window, domain=domain)
+        window, domain, symbol = aux_data
+        return cls(children, window=window, domain=domain, symbol=symbol)

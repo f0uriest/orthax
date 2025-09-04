@@ -101,6 +101,7 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
     `a`, `b`, `g`, `m`
     """
 
+    _basis_name: str = "P"
     _weight: callable = eqx.field(static=True)
     _domain: tuple[float, float]
 
@@ -113,6 +114,11 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
     def domain(self):
         """tuple: Lower and upper bounds for inner product defining orthogonality."""
         return self._domain
+
+    @property
+    def basis_name(self):
+        """ what symbol to use when printing the polynomial """
+        return self._basis_name
 
     @abc.abstractmethod
     def a(self, k):
@@ -343,6 +349,7 @@ class ChebyshevT(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: 1.0 / jnp.sqrt(1 - x**2), domain=(-1, 1), scale=scale
         )
+        self.basis_name = "T"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -379,6 +386,7 @@ class ChebyshevU(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: jnp.sqrt(1 - x**2), domain=(-1, 1), scale=scale
         )
+        self.basis_name = "U"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -415,6 +423,7 @@ class ChebyshevV(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: jnp.sqrt((1 + x) / (1 - x)), domain=(-1, 1), scale=scale
         )
+        self.basis_name = "V"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -451,6 +460,7 @@ class ChebyshevW(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: jnp.sqrt((1 - x) / (1 + x)), domain=(-1, 1), scale=scale
         )
+        self.basis_name = "W"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -496,6 +506,7 @@ class Gegenbauer(ClassicalRecurrenceRelation):
             domain=(-1, 1),
             scale=scale,
         )
+        self.basis_name = "C"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -621,6 +632,7 @@ class Laguerre(ClassicalRecurrenceRelation):
 
     def __init__(self, scale="standard"):
         super().__init__(weight=lambda x: jnp.exp(-x), domain=(0, jnp.inf), scale=scale)
+        self.basis_name = "L"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -664,6 +676,7 @@ class GeneralizedLaguerre(ClassicalRecurrenceRelation):
             domain=(0, jnp.inf),
             scale=scale,
         )
+        self.basis_name = "L"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -700,6 +713,7 @@ class Hermite(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: jnp.exp(-(x**2)), domain=(-jnp.inf, jnp.inf), scale=scale
         )
+        self.basis_name = "H"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -738,6 +752,7 @@ class HermiteE(ClassicalRecurrenceRelation):
             domain=(-jnp.inf, jnp.inf),
             scale=scale,
         )
+        self.basis_name = "He"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
