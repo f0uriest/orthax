@@ -11,7 +11,6 @@ from jax import config, numpy as jnp
 import numpy as np
 from numpy.testing import (
     assert_,
-    assert_almost_equal,
     assert_array_almost_equal,
     assert_array_equal,
     assert_equal,
@@ -611,7 +610,7 @@ class TestMisc:
         p = poly.Polynomial.fit([1], [2], deg=0)
         assert_equal(p.coef, np.array([2.]))
         p = poly.Polynomial.fit([1, 1], [2, 2.1], deg=0)
-        assert_almost_equal(p.coef, [2.05])
+        assert_array_almost_equal(p.coef, [2.05])
         with pytest.warns(np.exceptions.RankWarning):
             p = poly.Polynomial.fit([1, 1], [2, 2.1], deg=1)
 
