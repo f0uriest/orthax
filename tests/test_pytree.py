@@ -44,7 +44,7 @@ class TestArithmetic:
         assert jax.jit(lambda: p ** 5)() == p ** 5
 
 
-@pytest.mark.skip()
+# @pytest.mark.skip()
 @pytest.mark.parametrize("seed", range(7))
 @pytest.mark.parametrize("kind1", DEFAULT_KINDS)
 @pytest.mark.parametrize("kind2", DEFAULT_KINDS)

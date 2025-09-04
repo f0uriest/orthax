@@ -996,18 +996,10 @@ def chebval(x, c, tensor=True):
     c0 = c[-2] # scalar
     c1 = c[-1] # scalar
 
-    def body(i, val):
-        c0, c1 = val
+    for idx in range(3, len(c)+1):
         tmp = c0
-        c0 = c[-i] - c1
+        c0 = c[-idx] - c1
         c1 = tmp + c1 * x2 # c1 becomes type(x)
-        return c0, c1
-
-    c0, c1 = body(3, (c0, c1)) # c1 becomes type(x)
-    if len(c) > 3:
-        c0, c1 = body(4, (c0, c1)) #c0 becomes type(x)
-        # now types are stable and we can loop:
-        c0, c1 = jax.lax.fori_loop(5, len(c) + 1, body, (c0, c1))
 
     return c0 + c1 * x
 
