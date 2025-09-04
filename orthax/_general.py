@@ -8,6 +8,7 @@ polynomial series.
 
 Classes
 ----------
+
 .. autosummary::
    :toctree: generated/
 
