@@ -5,6 +5,13 @@ Hermite Series, "Physicists"
 
 This module provides a number of functions useful for dealing with Hermite series.
 
+Classes
+---------
+.. autosummary::
+   :toctree: generated/
+
+    Hermite
+
 Constants
 ---------
 .. autosummary::
@@ -68,7 +75,7 @@ import jax
 import jax.numpy as jnp
 from jax import jit
 
-from . import polyutils as pu
+from . import polyutils as pu, polybase as pb
 
 __all__ = [
     "hermzero",
@@ -101,6 +108,7 @@ __all__ = [
     "hermcompanion",
     "hermgauss",
     "hermweight",
+    "Hermite",
 ]
 
 hermtrim = pu.trimcoef
@@ -1654,3 +1662,55 @@ def hermnorm(n):
         * 2 ** (n / 2)
         * jnp.exp(jax.scipy.special.gammaln(n + 1) / 2)
     )
+
+
+#
+# Hermite series class
+#
+
+@jax.tree_util.register_pytree_node_class
+class Hermite(pb.ABCPolyBase):
+    """An Hermite series class.
+
+    The Hermite class provides the standard Python numerical methods
+    '+', '-', '*', '//', '%', 'divmod', '**', and '()' as well as the
+    attributes and methods listed below.
+
+    Parameters
+    ----------
+    coef : array_like
+        Hermite coefficients in order of increasing degree, i.e,
+        ``(1, 2, 3)`` gives ``1*H_0(x) + 2*H_1(x) + 3*H_2(x)``.
+    domain : (2,) array_like, optional
+        Domain to use. The interval ``[domain[0], domain[1]]`` is mapped
+        to the interval ``[window[0], window[1]]`` by shifting and scaling.
+        The default value is [-1., 1.].
+    window : (2,) array_like, optional
+        Window, see `domain` for its use. The default value is [-1., 1.].
+    symbol : str, optional
+        Symbol used to represent the independent variable in string
+        representations of the polynomial expression, e.g. for printing.
+        The symbol must be a valid Python identifier. Default value is 'x'.
+
+        .. versionadded:: 1.24
+
+    """
+
+    # Virtual Functions
+    _add = staticmethod(hermadd)
+    _sub = staticmethod(hermsub)
+    _mul = staticmethod(hermmul)
+    _div = staticmethod(hermdiv)
+    _pow = staticmethod(hermpow)
+    _val = staticmethod(hermval)
+    _int = staticmethod(hermint)
+    _der = staticmethod(hermder)
+    _fit = staticmethod(hermfit)
+    _line = staticmethod(hermline)
+    _roots = staticmethod(hermroots)
+    _fromroots = staticmethod(hermfromroots)
+
+    # Virtual properties
+    domain = jnp.array(hermdomain)
+    window = jnp.array(hermdomain)
+    basis_name = "H"
