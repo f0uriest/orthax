@@ -349,7 +349,7 @@ class ChebyshevT(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: 1.0 / jnp.sqrt(1 - x**2), domain=(-1, 1), scale=scale
         )
-        self.basis_name = "T"
+        self._basis_name = "T"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -386,7 +386,7 @@ class ChebyshevU(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: jnp.sqrt(1 - x**2), domain=(-1, 1), scale=scale
         )
-        self.basis_name = "U"
+        self._basis_name = "U"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -423,7 +423,7 @@ class ChebyshevV(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: jnp.sqrt((1 + x) / (1 - x)), domain=(-1, 1), scale=scale
         )
-        self.basis_name = "V"
+        self._basis_name = "V"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -460,7 +460,7 @@ class ChebyshevW(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: jnp.sqrt((1 - x) / (1 + x)), domain=(-1, 1), scale=scale
         )
-        self.basis_name = "W"
+        self._basis_name = "W"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -506,7 +506,7 @@ class Gegenbauer(ClassicalRecurrenceRelation):
             domain=(-1, 1),
             scale=scale,
         )
-        self.basis_name = "C"
+        self._basis_name = "C"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -632,7 +632,7 @@ class Laguerre(ClassicalRecurrenceRelation):
 
     def __init__(self, scale="standard"):
         super().__init__(weight=lambda x: jnp.exp(-x), domain=(0, jnp.inf), scale=scale)
-        self.basis_name = "L"
+        self._basis_name = "L"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -676,7 +676,7 @@ class GeneralizedLaguerre(ClassicalRecurrenceRelation):
             domain=(0, jnp.inf),
             scale=scale,
         )
-        self.basis_name = "L"
+        self._basis_name = "L"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -713,7 +713,7 @@ class Hermite(ClassicalRecurrenceRelation):
         super().__init__(
             weight=lambda x: jnp.exp(-(x**2)), domain=(-jnp.inf, jnp.inf), scale=scale
         )
-        self.basis_name = "H"
+        self._basis_name = "H"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""
@@ -752,7 +752,7 @@ class HermiteE(ClassicalRecurrenceRelation):
             domain=(-jnp.inf, jnp.inf),
             scale=scale,
         )
-        self.basis_name = "He"
+        self._basis_name = "He"
 
     def a(self, k):
         """`a` coefficients of the monic three term recurrence relation."""

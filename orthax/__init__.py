@@ -103,6 +103,7 @@ from ._general import (
     orthvander3d,
     orthweight,
     poly2orth,
+    OrthPoly
 )
 
 def set_default_printstyle(style):

@@ -13,6 +13,7 @@ import os
 from collections.abc import Callable
 
 from jax import numpy as jnp
+import jax
 import numpy as np
 
 from . import polyutils as pu
@@ -284,12 +285,21 @@ class ABCPolyBase(ABC):
         if isinstance(other, ABCPolyBase):
             if not isinstance(other, self.__class__):
                 raise TypeError("Polynomial types differ")
-            elif not jnp.all(self.domain == other.domain):
-                raise TypeError("Domains differ")
-            elif not jnp.all(self.window == other.window):
-                raise TypeError("Windows differ")
-            elif self.symbol != other.symbol:
-                raise ValueError("Polynomial symbols differ")
+
+            def error_if_unequal_domain(domain_equal):
+                if not domain_equal:
+                    raise TypeError("Domains differ")
+            jax.debug.callback(error_if_unequal_domain, jnp.all(self.domain == other.domain))
+   
+            def error_if_unequal_window(window_equal):
+                if not window_equal:
+                    raise TypeError("Windows differ")
+            jax.debug.callback(error_if_unequal_window, jnp.all(self.window == other.window))
+
+            def error_if_unequal_symbol(self, other):
+                if self.symbol != other.symbol:
+                    raise ValueError("Polynomial symbols differ")
+            jax.debug.callback(error_if_unequal_symbol, self, other)
             return other.coef
         return other
 
@@ -775,7 +785,7 @@ class ABCPolyBase(ABC):
             coef = self.coef[:isize]
         return self.__class__(coef, self.domain, self.window, self.symbol)
 
-    def convert(self, domain=None, kind=None, window=None):
+    def convert(self, domain=None, kind=None, window=None) -> "ABCPolyBase":
         """Convert series to a different kind and/or domain and/or window.
 
         Parameters
@@ -1197,10 +1207,11 @@ class ABCPolyBase(ABC):
         return series.convert(domain, cls, window)
 
     def tree_flatten(self):
-        aux_data = (self.window, self.domain, self.symbol)
-        return (self.coef, aux_data)
+        children = (self.coef, self.window, self.domain)
+        aux_data = (self.symbol,)
+        return (children, aux_data)
 
     @classmethod
     def tree_unflatten(cls, aux_data, children):
-        window, domain, symbol = aux_data
-        return cls(children, window=window, domain=domain, symbol=symbol)
+        [symbol] = aux_data
+        return cls(*children, symbol = symbol)
