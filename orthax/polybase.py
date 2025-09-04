@@ -12,7 +12,7 @@ import numbers
 import os
 from collections.abc import Callable
 
-import numpy as np
+from jax import numpy as jnp
 
 from . import polyutils as pu
 
@@ -206,7 +206,7 @@ class ABCPolyBase(ABC):
             True if the coefficients are the same, False otherwise.
 
         """
-        return len(self.coef) == len(other.coef) and np.all(self.coef == other.coef)
+        return len(self.coef) == len(other.coef) and jnp.all(self.coef == other.coef)
 
     def has_samedomain(self, other):
         """Check if domains match.
@@ -222,7 +222,7 @@ class ABCPolyBase(ABC):
             True if the domains are the same, False otherwise.
 
         """
-        return np.all(self.domain == other.domain)
+        return jnp.all(self.domain == other.domain)
 
     def has_samewindow(self, other):
         """Check if windows match.
@@ -238,7 +238,7 @@ class ABCPolyBase(ABC):
             True if the windows are the same, False otherwise.
 
         """
-        return np.all(self.window == other.window)
+        return jnp.all(self.window == other.window)
 
     def has_sametype(self, other):
         """Check if types match.
@@ -283,9 +283,9 @@ class ABCPolyBase(ABC):
         if isinstance(other, ABCPolyBase):
             if not isinstance(other, self.__class__):
                 raise TypeError("Polynomial types differ")
-            elif not np.all(self.domain == other.domain):
+            elif not jnp.all(self.domain == other.domain):
                 raise TypeError("Domains differ")
-            elif not np.all(self.window == other.window):
+            elif not jnp.all(self.window == other.window):
                 raise TypeError("Windows differ")
             elif self.symbol != other.symbol:
                 raise ValueError("Polynomial symbols differ")
@@ -354,7 +354,7 @@ class ABCPolyBase(ABC):
         ``term_method`` to generate each polynomial term.
         """
         # Get configuration for line breaks
-        linewidth = np.get_printoptions().get("linewidth", 75)
+        linewidth = jnp.get_printoptions().get("linewidth", 75)
         if linewidth < 1:
             linewidth = 1
         out = pu.format_float(self.coef[0])
@@ -639,10 +639,10 @@ class ABCPolyBase(ABC):
     def __eq__(self, other):
         res = (
             isinstance(other, self.__class__)
-            and np.all(self.domain == other.domain)
-            and np.all(self.window == other.window)
+            and jnp.all(self.domain == other.domain)
+            and jnp.all(self.window == other.window)
             and (self.coef.shape == other.coef.shape)
-            and np.all(self.coef == other.coef)
+            and jnp.all(self.coef == other.coef)
             and (self.symbol == other.symbol)
         )
         return res
@@ -678,8 +678,8 @@ class ABCPolyBase(ABC):
 
         Create a polynomial object for ``1 + 7*x + 4*x**2``:
 
-        >>> np.polynomial.set_default_printstyle("unicode")
-        >>> poly = np.polynomial.Polynomial([1, 7, 4])
+        >>> orthax.polynomial.set_default_printstyle("unicode")
+        >>> poly = orthax.polynomial.Polynomial([1, 7, 4])
         >>> print(poly)
         1.0 + 7.0·x + 4.0·x²
         >>> poly.degree()
@@ -688,7 +688,7 @@ class ABCPolyBase(ABC):
         Note that this method does not check for non-zero coefficients.
         You must trim the polynomial to remove any trailing zeroes:
 
-        >>> poly = np.polynomial.Polynomial([1, 7, 0])
+        >>> poly = orthax.polynomial.Polynomial([1, 7, 0])
         >>> print(poly)
         1.0 + 7.0·x + 0.0·x²
         >>> poly.degree()
@@ -936,7 +936,7 @@ class ABCPolyBase(ABC):
         """
         if domain is None:
             domain = self.domain
-        x = np.linspace(domain[0], domain[1], n)
+        x = jnp.linspace(domain[0], domain[1], n)
         y = self(x)
         return x, y
 
@@ -1022,8 +1022,7 @@ class ABCPolyBase(ABC):
         if domain is None:
             domain = pu.getdomain(x)
             if domain[0] == domain[1]:
-                domain[0] -= 1
-                domain[1] += 1
+                domain = jnp.array([domain[0] - 1, domain[1] + 1])
         elif isinstance(domain, list) and len(domain) == 0:
             domain = cls.domain
 
@@ -1195,3 +1194,12 @@ class ABCPolyBase(ABC):
         if window is None:
             window = cls.window
         return series.convert(domain, cls, window)
+
+    def tree_flatten(self):
+        aux_data = (self.window, self.domain)
+        return (self.coef, aux_data)
+
+    @classmethod
+    def tree_unflatten(cls, aux_data, children):
+        window, domain = aux_data
+        return cls(children, window=window, domain=domain)

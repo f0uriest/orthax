@@ -6,6 +6,13 @@ Power Series
 This module provides a number of functions useful for
 dealing with polynomials.
 
+Classes
+---------
+.. autosummary::
+   :toctree: generated/
+
+    Polynomial
+
 Constants
 ---------
 .. autosummary::
@@ -86,6 +93,7 @@ __all__ = [
     "polygrid3d",
     "polyvander2d",
     "polyvander3d",
+    "Polynomial"
 ]
 
 
@@ -95,7 +103,7 @@ import jax
 import jax.numpy as jnp
 from jax import jit
 
-from . import polyutils as pu
+from . import polyutils as pu, polybase as pb
 
 polytrim = pu.trimcoef
 
@@ -1389,3 +1397,75 @@ def polyroots(c):
     r = jnp.linalg.eigvals(m)
     r = jnp.sort(r)
     return r
+
+
+@jax.tree_util.register_pytree_node_class
+class Polynomial(pb.ABCPolyBase):
+    """A power series class.
+
+    The Polynomial class provides the standard Python numerical methods
+    '+', '-', '*', '//', '%', 'divmod', '**', and '()' as well as the
+    attributes and methods listed below.
+
+    Parameters
+    ----------
+    coef : array_like
+        Polynomial coefficients in order of increasing degree, i.e.,
+        ``(1, 2, 3)`` give ``1 + 2*x + 3*x**2``.
+    domain : (2,) array_like, optional
+        Domain to use. The interval ``[domain[0], domain[1]]`` is mapped
+        to the interval ``[window[0], window[1]]`` by shifting and scaling.
+        The default value is [-1., 1.].
+    window : (2,) array_like, optional
+        Window, see `domain` for its use. The default value is [-1., 1.].
+    symbol : str, optional
+        Symbol used to represent the independent variable in string
+        representations of the polynomial expression, e.g. for printing.
+        The symbol must be a valid Python identifier. Default value is 'x'.
+
+        .. versionadded:: 1.24
+
+    """
+    # Virtual Functions
+    _add = staticmethod(polyadd)
+    _sub = staticmethod(polysub)
+    _mul = staticmethod(polymul)
+    _div = staticmethod(polydiv)
+    _pow = staticmethod(polypow)
+    _val = staticmethod(polyval)
+    _int = staticmethod(polyint)
+    _der = staticmethod(polyder)
+    _fit = staticmethod(polyfit)
+    _line = staticmethod(polyline)
+    _roots = staticmethod(polyroots)
+    _fromroots = staticmethod(polyfromroots)
+
+    # Virtual properties
+    domain = jnp.array(polydomain)
+    window = jnp.array(polydomain)
+    basis_name = None
+
+    @classmethod
+    def _str_term_unicode(cls, i, arg_str):
+        if i == '1':
+            return f"·{arg_str}"
+        else:
+            return f"·{arg_str}{i.translate(cls._superscript_mapping)}"
+
+    @staticmethod
+    def _str_term_ascii(i, arg_str):
+        if i == '1':
+            return f" {arg_str}"
+        else:
+            return f" {arg_str}**{i}"
+
+    @staticmethod
+    def _repr_latex_term(i, arg_str, needs_parens):
+        if needs_parens:
+            arg_str = rf"\left({arg_str}\right)"
+        if i == 0:
+            return '1'
+        elif i == 1:
+            return arg_str
+        else:
+            return f"{arg_str}^{{{i}}}"

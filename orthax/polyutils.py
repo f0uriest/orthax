@@ -20,11 +20,12 @@ Functions
 
 import functools
 import operator
+import warnings
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 from jax import jit
+import numpy as np
 
 __all__ = [
     "as_series",
@@ -603,10 +604,12 @@ def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
 
     if deg.ndim == 0:
         lmax = int(deg)
+        order = lmax + 1
         van = vander_f(x, lmax)
     else:
         deg = np.sort(deg)
         lmax = int(deg[-1])
+        order = len(deg)
         van = vander_f(x, lmax)[:, deg]
 
     # set up the least squares matrices in transposed form
@@ -649,7 +652,14 @@ def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
 
     if full:
         return c, [resids, rank, s, rcond]
-    else:
+    else:  # no diagnostic info is returned -> warning callback
+
+        def rank_warn(rank, order):
+            if rank != order:
+                msg = "The fit may be poorly conditioned"
+                warnings.warn(msg, np.exceptions.RankWarning, stacklevel=2)
+
+        jax.debug.callback(rank_warn, rank, order)
         return c
 
 
@@ -709,19 +719,19 @@ def _pad_along_axis(array, pad=(0, 0), axis=0):
 
 
 def format_float(x, parens=False):
-    if not np.issubdtype(type(x), np.floating):
+    if not jnp.issubdtype(type(x), jnp.floating):
         return str(x)
 
-    opts = np.get_printoptions()
+    opts = jnp.get_printoptions()
 
-    if np.isnan(x):
+    if jnp.isnan(x):
         return opts["nanstr"]
-    elif np.isinf(x):
+    elif jnp.isinf(x):
         return opts["infstr"]
 
     exp_format = False
     if x != 0:
-        a = np.abs(x)
+        a = jnp.abs(x)
         if a >= 1.0e8 or a < 10 ** min(0, -(opts["precision"] - 1) // 2):
             exp_format = True
 
