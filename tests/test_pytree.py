@@ -28,6 +28,7 @@ def random_polynomial(kind, rng: np.random.Generator):
     coef = rng.standard_normal(rng.integers(low=1, high=20))
     return kind(coef)
 
+
 @pytest.mark.parametrize("seed", range(5))
 @pytest.mark.parametrize("kind", DEFAULT_KINDS)
 class TestArithmetic:
@@ -40,19 +41,11 @@ class TestArithmetic:
         q = random_polynomial(kind, rng)
 
         # jit has no impact
-        assert_allclose(
-            jax.jit(lambda: p * q)().coef,
-            (p * q).coef,
-            rtol=1e-11
-        )
+        assert_allclose(jax.jit(lambda: p * q)().coef, (p * q).coef, rtol=1e-11)
 
         # functional equivalence
         x = rng.uniform(-1, 1, 100)
-        assert_allclose(
-            jax.jit(lambda: (p * q)(x))(),
-            p(x) * q(x),
-            rtol=1e-11
-        )
+        assert_allclose(jax.jit(lambda: (p * q)(x))(), p(x) * q(x), rtol=1e-11)
 
     def test_add(self, seed, kind):
         """Test addition"""
@@ -61,19 +54,11 @@ class TestArithmetic:
         q = random_polynomial(kind, rng)
 
         # jit has no impact
-        assert_allclose(
-            jax.jit(lambda: p + q)().coef,
-            (p + q).coef,
-            rtol=1e-11
-        )
+        assert_allclose(jax.jit(lambda: p + q)().coef, (p + q).coef, rtol=1e-11)
 
         # functional equivalence
         x = rng.uniform(-1, 1, 100)
-        assert_allclose(
-            jax.jit(lambda: (p + q)(x))(),
-            p(x) + q(x),
-            rtol=1e-11
-        )
+        assert_allclose(jax.jit(lambda: (p + q)(x))(), p(x) + q(x), rtol=1e-11)
 
     def test_sub(self, seed, kind):
         """Test subtraction"""
@@ -82,20 +67,11 @@ class TestArithmetic:
         q = random_polynomial(kind, rng)
 
         # jit has no impact
-        assert_allclose(
-            jax.jit(lambda: p - q)().coef,
-            (p - q).coef,
-            rtol=1e-11
-        )
+        assert_allclose(jax.jit(lambda: p - q)().coef, (p - q).coef, rtol=1e-11)
 
         # functional equivalence
         x = rng.uniform(-1, 1, 100)
-        assert_allclose(
-            jax.jit(lambda: (p - q)(x))(),
-            p(x) - q(x),
-            rtol=1e-11
-        )
-
+        assert_allclose(jax.jit(lambda: (p - q)(x))(), p(x) - q(x), rtol=1e-11)
 
     def test_div(self, seed, kind):
         """Test division"""
@@ -104,19 +80,11 @@ class TestArithmetic:
         num = rng.standard_normal()
 
         # jit has no impact
-        assert_allclose(
-            jax.jit(lambda: p / num)().coef,
-            (p / num).coef,
-            rtol=1e-11
-        )
+        assert_allclose(jax.jit(lambda: p / num)().coef, (p / num).coef, rtol=1e-11)
 
         # functional equivalence
         x = rng.uniform(-1, 1, 100)
-        assert_allclose(
-            jax.jit(lambda: (p / num)(x))(),
-            p(x) / num,
-            rtol=1e-11
-        )
+        assert_allclose(jax.jit(lambda: (p / num)(x))(), p(x) / num, rtol=1e-11)
 
     def test_pow(self, seed, kind):
         """Test powers"""
@@ -125,12 +93,7 @@ class TestArithmetic:
         num = rng.integers(0, 5)
 
         # jit has no impact
-        assert_allclose(
-            jax.jit(lambda: p ** num)().coef,
-            (p ** num).coef,
-            rtol=1e-11
-        )
-
+        assert_allclose(jax.jit(lambda: p**num)().coef, (p**num).coef, rtol=1e-11)
 
         # functional equivalence
         x = rng.uniform(-1, 1, 100)
@@ -138,15 +101,15 @@ class TestArithmetic:
         # this seems to be numerically unstable:
         # only require pass if numpy passes
         npp = getattr(np.polynomial, kind.__name__)(p.coef)
-        if np.allclose((npp ** num)(x), npp(x) ** num):
+        if np.allclose((npp**num)(x), npp(x) ** num):
             # no jit
             assert_allclose(
-                (p ** num)(x),
+                (p**num)(x),
                 p(x) ** num,
             )
             # with jit
             assert_allclose(
-                jax.jit(lambda: (p ** num)(x))(),
+                jax.jit(lambda: (p**num)(x))(),
                 p(x) ** num,
             )
 

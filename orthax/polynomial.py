@@ -93,7 +93,7 @@ __all__ = [
     "polygrid3d",
     "polyvander2d",
     "polyvander3d",
-    "Polynomial"
+    "Polynomial",
 ]
 
 
@@ -730,7 +730,7 @@ def polyval(x, c, tensor=True):
 
     # x may be an array or an object that implements scalar multiplication
     # and addition, e.g. a Polynomial
-    c0 = c[-1] + 0 * x # return type(x)
+    c0 = c[-1] + 0 * x  # return type(x)
 
     for idx in range(2, len(c) + 1):
         c0 = c[-idx] + c0 * x
@@ -1427,6 +1427,7 @@ class Polynomial(pb.ABCPolyBase):
         .. versionadded:: 1.24
 
     """
+
     # Virtual Functions
     _add = staticmethod(polyadd)
     _sub = staticmethod(polysub)
@@ -1448,14 +1449,14 @@ class Polynomial(pb.ABCPolyBase):
 
     @classmethod
     def _str_term_unicode(cls, i, arg_str):
-        if i == '1':
+        if i == "1":
             return f"·{arg_str}"
         else:
             return f"·{arg_str}{i.translate(cls._superscript_mapping)}"
 
     @staticmethod
     def _str_term_ascii(i, arg_str):
-        if i == '1':
+        if i == "1":
             return f" {arg_str}"
         else:
             return f" {arg_str}**{i}"
@@ -1465,7 +1466,7 @@ class Polynomial(pb.ABCPolyBase):
         if needs_parens:
             arg_str = rf"\left({arg_str}\right)"
         if i == 0:
-            return '1'
+            return "1"
         elif i == 1:
             return arg_str
         else:

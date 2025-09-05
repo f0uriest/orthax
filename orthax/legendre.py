@@ -902,7 +902,7 @@ def legval(x, c, tensor=True):
     # x may be an array or an object that implements scalar multiplication
     # and addition, e.g. a Polynomial
     if len(c) == 1:
-        return c[0] + 0 * x # return type(x)
+        return c[0] + 0 * x  # return type(x)
     elif len(c) == 2:
         return c[0] + c[1] * x
 
@@ -1585,6 +1585,7 @@ def legnorm(n):
 #
 # Legendre series class
 #
+
 
 @jax.tree_util.register_pytree_node_class
 class Legendre(pb.ABCPolyBase):

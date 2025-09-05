@@ -988,18 +988,18 @@ def chebval(x, c, tensor=True):
     # x may be an array or an object that implements scalar multiplication
     # and addition, e.g. a Polynomial
     if len(c) == 1:
-        return c[0] + 0 * x # return type(x),
+        return c[0] + 0 * x  # return type(x),
     elif len(c) == 2:
         return c[0] + c[1] * x
 
-    x2 = 2 * x # type(x)
-    c0 = c[-2] # scalar
-    c1 = c[-1] # scalar
+    x2 = 2 * x  # type(x)
+    c0 = c[-2]  # scalar
+    c1 = c[-1]  # scalar
 
-    for idx in range(3, len(c)+1):
+    for idx in range(3, len(c) + 1):
         tmp = c0
         c0 = c[-idx] - c1
-        c1 = tmp + c1 * x2 # c1 becomes type(x)
+        c1 = tmp + c1 * x2  # c1 becomes type(x)
 
     return c0 + c1 * x
 

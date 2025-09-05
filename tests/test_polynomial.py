@@ -53,7 +53,7 @@ class TestConstants:
 
     def test_polyx(self):
         assert_equal(poly.polyx, np.array([0, 1]))
- 
+
     def test_copy(self):
         x = poly.Polynomial([1, 2, 3])
         y = deepcopy(x)
@@ -63,6 +63,7 @@ class TestConstants:
         x = poly.Polynomial([1, 2, 3])
         y = pickle.loads(pickle.dumps(x))
         assert_equal(x, y)
+
 
 class TestArithmetic:
     def test_polyadd(self):
@@ -608,7 +609,7 @@ class TestMisc:
 
     def test_fit_degenerate_domain(self):
         p = poly.Polynomial.fit([1], [2], deg=0)
-        assert_equal(p.coef, np.array([2.]))
+        assert_equal(p.coef, np.array([2.0]))
         p = poly.Polynomial.fit([1, 1], [2, 2.1], deg=0)
         assert_array_almost_equal(p.coef, [2.05])
         with pytest.warns(np.exceptions.RankWarning):

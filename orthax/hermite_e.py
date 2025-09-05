@@ -1641,6 +1641,7 @@ def hermenorm(n):
 # HermiteE series class
 #
 
+
 @jax.tree_util.register_pytree_node_class
 class HermiteE(pb.ABCPolyBase):
     """An HermiteE series class.
