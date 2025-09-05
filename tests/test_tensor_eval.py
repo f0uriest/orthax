@@ -21,6 +21,10 @@ def test_tensor_key(eval_fun):
     a = np.array([[1, 2, 3], [2, 3, 4]])
     b = jnp.array(a)
 
+    # if this test fails you may have removed the @jit decorator
+    # from an eval function, jitted the functions cannot tell
+    # the difference between a jnp.ndarray and a np.ndarray
+    # so the test for jnp.ndarray succeeds. Unjitted.... 
     assert eval_fun(a, a, tensor=True).shape == (3, 2, 3)
     assert eval_fun(b, b, tensor=True).shape == (3, 2, 3)
     assert eval_fun(a, a, tensor=False).shape == (2, 3)
