@@ -289,16 +289,25 @@ class ABCPolyBase(ABC):
             def error_if_unequal_domain(domain_equal):
                 if not domain_equal:
                     raise TypeError("Domains differ")
-            jax.debug.callback(error_if_unequal_domain, jnp.all(self.domain == other.domain))
-   
+
+            jax.debug.callback(
+                error_if_unequal_domain,
+                jnp.all(self.domain == other.domain),
+            )
+
             def error_if_unequal_window(window_equal):
                 if not window_equal:
                     raise TypeError("Windows differ")
-            jax.debug.callback(error_if_unequal_window, jnp.all(self.window == other.window))
+
+            jax.debug.callback(
+                error_if_unequal_window,
+                jnp.all(self.window == other.window),
+            )
 
             def error_if_unequal_symbol(self, other):
                 if self.symbol != other.symbol:
                     raise ValueError("Polynomial symbols differ")
+
             jax.debug.callback(error_if_unequal_symbol, self, other)
             return other.coef
         return other
@@ -1214,4 +1223,4 @@ class ABCPolyBase(ABC):
     @classmethod
     def tree_unflatten(cls, aux_data, children):
         [symbol] = aux_data
-        return cls(*children, symbol = symbol)
+        return cls(*children, symbol=symbol)
