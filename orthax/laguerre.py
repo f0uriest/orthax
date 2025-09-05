@@ -895,31 +895,25 @@ def lagval(x, c, tensor=True):
 
     """
     c = pu.as_series(c)
-    x = jnp.asarray(x)
-    if tensor:
+    if isinstance(x, (tuple, list)):
+        x = jnp.asarray(x)
+    if isinstance(x, jnp.ndarray) and tensor:
         c = c.reshape(c.shape + (1,) * x.ndim)
 
     if len(c) == 1:
-        c0 = c[0]
-        c1 = 0
+        return c[0] + 0 * x  # return type(x)
     elif len(c) == 2:
-        c0 = c[0]
-        c1 = c[1]
-    else:
+        return c[0] + c[1] * (1 - x)
 
-        nd = len(c)
-        c0 = c[-2] * jnp.ones_like(x)
-        c1 = c[-1] * jnp.ones_like(x)
+    nd = len(c)
+    c0 = c[-2]
+    c1 = c[-1]
 
-        def body(i, val):
-            c0, c1, nd = val
-            tmp = c0
-            nd = nd - 1
-            c0 = c[-i] - (c1 * (nd - 1)) / nd
-            c1 = tmp + (c1 * ((2 * nd - 1) - x)) / nd
-            return c0, c1, nd
-
-        c0, c1, _ = jax.lax.fori_loop(3, len(c) + 1, body, (c0, c1, nd))
+    for idx in range(3, len(c) + 1):
+        tmp = c0
+        nd = nd - 1
+        c0 = c[-idx] - (c1 * (nd - 1)) / nd
+        c1 = tmp + (c1 * ((2 * nd - 1) - x)) / nd
 
     return c0 + c1 * (1 - x)
 
@@ -1603,6 +1597,7 @@ def lagnorm(n):
 # Laguerre series class
 #
 
+
 @jax.tree_util.register_pytree_node_class
 class Laguerre(pb.ABCPolyBase):
     """A Laguerre series class.
@@ -1630,6 +1625,7 @@ class Laguerre(pb.ABCPolyBase):
         .. versionadded:: 1.24
 
     """
+
     # Virtual Functions
     _add = staticmethod(lagadd)
     _sub = staticmethod(lagsub)
@@ -1647,4 +1643,4 @@ class Laguerre(pb.ABCPolyBase):
     # Virtual properties
     domain = jnp.array(lagdomain)
     window = jnp.array(lagdomain)
-    basis_name = 'L'
+    basis_name = "L"

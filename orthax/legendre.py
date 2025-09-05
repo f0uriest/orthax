@@ -894,30 +894,27 @@ def legval(x, c, tensor=True):
 
     """
     c = pu.as_series(c)
-    x = jnp.asarray(x)
-    if tensor:
+    if isinstance(x, (tuple, list)):
+        x = jnp.asarray(x)
+    if isinstance(x, jnp.ndarray) and tensor:
         c = c.reshape(c.shape + (1,) * x.ndim)
 
+    # x may be an array or an object that implements scalar multiplication
+    # and addition, e.g. a Polynomial
     if len(c) == 1:
-        c0 = c[0]
-        c1 = 0
+        return c[0] + 0 * x # return type(x)
     elif len(c) == 2:
-        c0 = c[0]
-        c1 = c[1]
-    else:
-        nd = len(c)
-        c0 = c[-2] * jnp.ones_like(x)
-        c1 = c[-1] * jnp.ones_like(x)
+        return c[0] + c[1] * x
 
-        def body(i, val):
-            c0, c1, nd = val
-            tmp = c0
-            nd = nd - 1
-            c0 = c[-i] - (c1 * (nd - 1)) / nd
-            c1 = tmp + (c1 * x * (2 * nd - 1)) / nd
-            return c0, c1, nd
+    nd = len(c)
+    c0 = c[-2]
+    c1 = c[-1]
 
-        c0, c1, _ = jax.lax.fori_loop(3, len(c) + 1, body, (c0, c1, nd))
+    for idx in range(3, len(c) + 1):
+        tmp = c0
+        nd = nd - 1
+        c0 = c[-idx] - (c1 * (nd - 1)) / nd
+        c1 = tmp + (c1 * x * (2 * nd - 1)) / nd
 
     return c0 + c1 * x
 

@@ -723,17 +723,18 @@ def polyval(x, c, tensor=True):
 
     """
     c = pu.as_series(c)
-    x = jnp.asarray(x)
-    if tensor:
+    if isinstance(x, (tuple, list)):
+        x = jnp.asarray(x)
+    if isinstance(x, jnp.ndarray) and tensor:
         c = c.reshape(c.shape + (1,) * x.ndim)
 
-    c0 = c[-1] + jnp.zeros_like(x)
+    # x may be an array or an object that implements scalar multiplication
+    # and addition, e.g. a Polynomial
+    c0 = c[-1] + 0 * x # return type(x)
 
-    def body(i, c0):
-        c0 = c[-i] + c0 * x
-        return c0
+    for idx in range(2, len(c) + 1):
+        c0 = c[-idx] + c0 * x
 
-    c0 = jax.lax.fori_loop(2, len(c) + 1, body, c0)
     return c0
 
 
