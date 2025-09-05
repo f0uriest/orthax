@@ -13,7 +13,6 @@ from orthax import (
     HermiteE,
     Laguerre,
     Legendre,
-    OrthPoly,
     Polynomial,
     polybase as pb,
 )

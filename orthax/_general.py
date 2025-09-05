@@ -6,14 +6,6 @@ Orthogonal Polynomial Series
 This module provides a number of functions useful for dealing with general orthogonal
 polynomial series.
 
-Classes
-----------
-
-.. autosummary::
-   :toctree: generated/
-
-   OrthPoly
-
 Arithmetic
 ----------
 
@@ -69,9 +61,7 @@ import jax
 import jax.numpy as jnp
 from jax import jit
 
-from orthax.recurrence import AbstractRecurrenceRelation
-
-from . import polyutils as pu, polybase as pb
+from . import polyutils as pu
 
 __all__ = [
     "orthadd",
@@ -100,7 +90,6 @@ __all__ = [
     "orthline",
     "orth2poly",
     "poly2orth",
-    "OrthPoly",
 ]
 
 orthtrim = pu.trimcoef
@@ -1529,80 +1518,3 @@ def orthroots(c, rec):
     r = jnp.sort(r)
     # TODO: add newton iterations to improve roots
     return r
-
-
-# pylint: disable=arguments-differ # need to convert staticmethod
-@jax.tree_util.register_pytree_node_class
-class OrthPoly(pb.ABCPolyBase):
-
-    # Virtual Functions
-    def _add(self, c1, c2):
-        return orthadd(c1, c2, rec=self.rec)
-
-    def _sub(self, c1, c2):
-        return orthsub(c1, c2, rec=self.rec)
-
-    def _mul(self, c1, c2):
-        return orthmul(c1, c2, rec=self.rec)
-
-    def _div(self, c1, c2):
-        return orthdiv(c1, c2, rec=self.rec)
-
-    def _pow(self, c, pow, maxpower=None):
-        return orthpow(c, pow, rec=self.rec, maxpower=maxpower)
-
-    def _val(self, x, c):
-        return orthval(x, c, rec=self.rec)
-
-    def _int(self, c, m, k, lbnd, scl):
-        return orthint(c, rec=self.rec, m=m, k=k, lbnd=lbnd, scl=scl)
-
-    def _der(self, c, m, scl):
-        return orthder(c, rec=self.rec, m=m, scl=scl)
-
-    def _fit(self, x, y, deg, rcond, full, w):
-        return orthfit(x, y, rec=self.rec, deg=deg, rcond=rcond, full=full, w=w)
-
-    def _line(self, off, scl):
-        return orthline(off, scl, rec=self.rec)
-
-    def _roots(self, r):
-        return orthroots(r, rec=self.rec)
-
-    def _fromroots(self, r):
-        return orthfromroots(r, rec=self.rec)
-
-    @property
-    def domain(self):
-        return self.rec.domain
-
-    @property
-    def window(self):
-        return self._window
-
-    @property
-    def basis_name(self):
-        return self.rec.basis_name
-
-    def __init__(self, coef, rec:AbstractRecurrenceRelation, window=None, symbol="x"):
-        super().__init__(coef, rec.domain, window, symbol)
-        self.window = rec.domain
-
-        if window is not None:
-            [window] = pu.as_series([window], trim=False)
-            if len(window) != 2:
-                raise ValueError("Window has wrong number of elements")
-            self._window = window
-        else:
-            self._window = rec.domain
-
-        self.rec = rec
-
-    def tree_flatten(self):
-        aux_data = (self.window, self.domain, self.symbol)
-        return ((self.coef, self.rec), aux_data)
-
-    @classmethod
-    def tree_unflatten(cls, aux_data, children):
-        window, domain, symbol = aux_data
-        return cls(*children, window=window, domain=domain, symbol=symbol)
