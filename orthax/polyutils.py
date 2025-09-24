@@ -20,11 +20,12 @@ Functions
 
 import functools
 import operator
+import warnings
 
 import jax
 import jax.numpy as jnp
-import numpy as np
 from jax import jit
+import numpy as np
 
 __all__ = [
     "as_series",
@@ -318,7 +319,8 @@ def mapdomain(x, old, new):
     array([-1.0+1.j , -0.6+0.6j, -0.2+0.2j,  0.2-0.2j,  0.6-0.6j,  1.0-1.j ]) # may vary
 
     """
-    x = jnp.asarray(x)
+    if isinstance(x, (tuple, list)):
+        x = jnp.asarray(x)
     off, scl = mapparms(old, new)
     return off + scl * x
 
@@ -603,10 +605,12 @@ def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
 
     if deg.ndim == 0:
         lmax = int(deg)
+        order = lmax + 1
         van = vander_f(x, lmax)
     else:
         deg = np.sort(deg)
         lmax = int(deg[-1])
+        order = len(deg)
         van = vander_f(x, lmax)[:, deg]
 
     # set up the least squares matrices in transposed form
@@ -649,7 +653,14 @@ def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
 
     if full:
         return c, [resids, rank, s, rcond]
-    else:
+    else:  # no diagnostic info is returned -> warning callback
+
+        def rank_warn(rank, order):
+            if rank != order:
+                msg = "The fit may be poorly conditioned"
+                warnings.warn(msg, np.exceptions.RankWarning, stacklevel=2)
+
+        jax.debug.callback(rank_warn, rank, order)
         return c
 
 
@@ -706,3 +717,50 @@ def _pad_along_axis(array, pad=(0, 0), axis=0):
 
     array = jnp.pad(array, pad_width=npad, mode="constant", constant_values=0)
     return jnp.moveaxis(array, 0, axis)
+
+
+def format_float(x, parens=False):
+    try:
+        x = x.item()
+    except AttributeError:
+        pass
+    if not jnp.issubdtype(type(x), jnp.floating):
+        return str(x)
+
+    opts = jnp.get_printoptions()
+
+    if jnp.isnan(x):
+        return opts["nanstr"]
+    elif jnp.isinf(x):
+        return opts["infstr"]
+
+    exp_format = False
+    if x != 0:
+        a = jnp.abs(x)
+        if a >= 1.0e8 or a < 10 ** min(0, -(opts["precision"] - 1) // 2):
+            exp_format = True
+
+    trim, unique = "0", True
+    if opts["floatmode"] == "fixed":
+        trim, unique = "k", False
+
+    if exp_format:
+        s = np._core.multiarray.dragon4_scientific(
+            x,
+            precision=opts["precision"],
+            unique=unique,
+            trim=trim,
+            sign=opts["sign"] == "+",
+        )
+        if parens:
+            s = "(" + s + ")"
+    else:
+        s = np._core.multiarray.dragon4_positional(
+            x,
+            precision=opts["precision"],
+            fractional=True,
+            unique=unique,
+            trim=trim,
+            sign=opts["sign"] == "+",
+        )
+    return s
