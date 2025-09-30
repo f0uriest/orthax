@@ -5,6 +5,13 @@ Laguerre Series
 
 This module provides a number of functions useful for dealing with Laguerre series.
 
+Classes
+---------
+.. autosummary::
+   :toctree: generated/
+
+    Laguerre
+
 Constants
 ---------
 .. autosummary::
@@ -68,7 +75,7 @@ import jax
 import jax.numpy as jnp
 from jax import jit
 
-from . import polyutils as pu
+from . import polyutils as pu, polybase as pb
 
 __all__ = [
     "lagzero",
@@ -101,6 +108,7 @@ __all__ = [
     "lagcompanion",
     "laggauss",
     "lagweight",
+    "Laguerre",
 ]
 
 lagtrim = pu.trimcoef
@@ -887,31 +895,25 @@ def lagval(x, c, tensor=True):
 
     """
     c = pu.as_series(c)
-    x = jnp.asarray(x)
-    if tensor:
+    if isinstance(x, (tuple, list)):
+        x = jnp.asarray(x)
+    if isinstance(x, jnp.ndarray) and tensor:
         c = c.reshape(c.shape + (1,) * x.ndim)
 
     if len(c) == 1:
-        c0 = c[0]
-        c1 = 0
+        return c[0] + 0 * x  # return type(x)
     elif len(c) == 2:
-        c0 = c[0]
-        c1 = c[1]
-    else:
+        return c[0] + c[1] * (1 - x)
 
-        nd = len(c)
-        c0 = c[-2] * jnp.ones_like(x)
-        c1 = c[-1] * jnp.ones_like(x)
+    nd = len(c)
+    c0 = c[-2]
+    c1 = c[-1]
 
-        def body(i, val):
-            c0, c1, nd = val
-            tmp = c0
-            nd = nd - 1
-            c0 = c[-i] - (c1 * (nd - 1)) / nd
-            c1 = tmp + (c1 * ((2 * nd - 1) - x)) / nd
-            return c0, c1, nd
-
-        c0, c1, _ = jax.lax.fori_loop(3, len(c) + 1, body, (c0, c1, nd))
+    for idx in range(3, len(c) + 1):
+        tmp = c0
+        nd = nd - 1
+        c0 = c[-idx] - (c1 * (nd - 1)) / nd
+        c1 = tmp + (c1 * ((2 * nd - 1) - x)) / nd
 
     return c0 + c1 * (1 - x)
 
@@ -1589,3 +1591,56 @@ def lagnorm(n):
 
     """
     return jnp.ones(jnp.asarray(n).shape)
+
+
+#
+# Laguerre series class
+#
+
+
+@jax.tree_util.register_pytree_node_class
+class Laguerre(pb.ABCPolyBase):
+    """A Laguerre series class.
+
+    The Laguerre class provides the standard Python numerical methods
+    '+', '-', '*', '//', '%', 'divmod', '**', and '()' as well as the
+    attributes and methods listed below.
+
+    Parameters
+    ----------
+    coef : array_like
+        Laguerre coefficients in order of increasing degree, i.e,
+        ``(1, 2, 3)`` gives ``1*L_0(x) + 2*L_1(X) + 3*L_2(x)``.
+    domain : (2,) array_like, optional
+        Domain to use. The interval ``[domain[0], domain[1]]`` is mapped
+        to the interval ``[window[0], window[1]]`` by shifting and scaling.
+        The default value is [0., 1.].
+    window : (2,) array_like, optional
+        Window, see `domain` for its use. The default value is [0., 1.].
+    symbol : str, optional
+        Symbol used to represent the independent variable in string
+        representations of the polynomial expression, e.g. for printing.
+        The symbol must be a valid Python identifier. Default value is 'x'.
+
+        .. versionadded:: 1.24
+
+    """
+
+    # Virtual Functions
+    _add = staticmethod(lagadd)
+    _sub = staticmethod(lagsub)
+    _mul = staticmethod(lagmul)
+    _div = staticmethod(lagdiv)
+    _pow = staticmethod(lagpow)
+    _val = staticmethod(lagval)
+    _int = staticmethod(lagint)
+    _der = staticmethod(lagder)
+    _fit = staticmethod(lagfit)
+    _line = staticmethod(lagline)
+    _roots = staticmethod(lagroots)
+    _fromroots = staticmethod(lagfromroots)
+
+    # Virtual properties
+    domain = jnp.array(lagdomain)
+    window = jnp.array(lagdomain)
+    basis_name = "L"
