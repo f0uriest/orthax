@@ -834,7 +834,7 @@ def generate_recurrence(weight, domain, n, scale="monic", quadrule=None, quadopt
     opts.setdefault("epsabs", 1e-15)
     opts.setdefault("epsrel", 1e-15)
     opts.setdefault("max_ninter", 500)
-    opts.setdefault("interval", domain)
+    opts.setdefault("interval", jnp.asarray(domain))
     quad = lambda fun: quadax.adaptive_quadrature(rule, fun, **opts)
 
     @jax.jit
