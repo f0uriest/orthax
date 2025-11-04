@@ -479,7 +479,7 @@ class Gegenbauer(ClassicalRecurrenceRelation):
 
     Parameters
     ----------
-    lmbda : float > -1/2
+    lmbda : float > -1/2, != 0
         Hyperparameter λ.
     scale : {"standard", "monic", "normalized"}
         "standard" corresponds to the common scaling found in textbooks such as
@@ -490,7 +490,13 @@ class Gegenbauer(ClassicalRecurrenceRelation):
     lmbda: float
 
     def __init__(self, lmbda, scale="standard"):
-        self.lmbda = eqx.error_if(lmbda, lmbda <= -0.5, "lmbda must be > -1/2")
+        lmbda = eqx.error_if(lmbda, lmbda <= -0.5, "lmbda must be > -1/2")
+        lam_zero_err = """
+        Classical Gegenbauer polynomials are undefined for lmbda==0,
+        consider using ChebyshevT which has similar orthogonality properties
+        but with a well behaved normalization"""
+        lmbda = eqx.error_if(lmbda, lmbda == 0.0, lam_zero_err)
+        self.lmbda = lmbda
         super().__init__(
             weight=lambda x: (1 - x**2) ** (self.lmbda - 0.5),
             domain=(-1, 1),
@@ -520,8 +526,11 @@ class Gegenbauer(ClassicalRecurrenceRelation):
             + jnp.log(jnp.pi)
             + gammaln(k + 2 * self.lmbda)
         )
-        logden = jnp.log(k + self.lmbda) + 2 * gammaln(self.lmbda) + gammaln(k + 1)
-        return jnp.exp(0.5 * (lognum - logden))
+        sgn = jnp.sign(k + self.lmbda) * jax.scipy.special.gammasgn(k + 2 * self.lmbda)
+        logden = (
+            jnp.log(jnp.abs(k + self.lmbda)) + 2 * gammaln(self.lmbda) + gammaln(k + 1)
+        )
+        return sgn * jnp.exp(0.5 * (lognum - logden))
 
     def _std_scale(self, k):
         return jnp.exp(
