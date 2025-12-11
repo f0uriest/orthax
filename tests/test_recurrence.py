@@ -53,7 +53,7 @@ def test_generate_recurrence(name, scale):
 
     n = 10
     rec2 = orthax.recurrence.generate_recurrence(
-        rec1.weight, rec1.domain, n, scale=scale
+        lambda x: rec1.weight(x), rec1.domain, n, scale=scale
     )
 
     nn = np.arange(n)
