@@ -1,2 +1,5 @@
 include versioneer.py
 include orthax/_version.py
+
+include LICENSE README.md pyproject.toml setup.py setup.cfg requirements.txt
+global-exclude __pycache__ *.py[cod] .venv
