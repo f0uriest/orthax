@@ -79,8 +79,10 @@ from jax.scipy.special import gammaln
 from jax.typing import ArrayLike
 
 
-def _asarray(k, kmax=None):
+def _asarray(k, kmax=None, check=True):
     k = jnp.asarray(k)
+    if not check:
+        return k
     k = eqx.error_if(
         k,
         (k < 0).any(),
@@ -153,6 +155,10 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
         ``m[k]`` is the coefficient of x**k in the kth orthogonal polynomial in the
         desired normalization. Default is 1 (monic form). For normalized form, set
         m = 1/g
+    check : bool
+        Whether to check that requested indices are within the tabulated range. Checks
+        use a runtime callback which can be slow. If False, indexing outside the
+        tabulated range silently returns incorrect values.
 
     """
 
@@ -161,6 +167,7 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
     _gk: jax.Array
     _mk: jax.Array
     _weight: Callable = eqx.field(static=True)
+    _check: bool = eqx.field(static=True)
 
     def __init__(
         self,
@@ -170,6 +177,7 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
         bk: jax.Array,
         gk: jax.Array,
         mk: Optional[jax.Array] = None,
+        check: bool = True,
     ):
         if mk is None:
             mk = jnp.ones_like(ak)
@@ -179,6 +187,7 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
         self._mk = mk
         self._weight = weight
         self._domain = domain
+        self._check = check
 
     def weight(self, x: ArrayLike) -> jax.Array:
         """Weight function defining inner product."""
@@ -186,22 +195,22 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
 
     def a(self, k: ArrayLike) -> jax.Array:
         """`a` coefficients of the monic three term recurrence relation."""
-        k = _asarray(k, kmax=len(self._ak) - 1)
+        k = _asarray(k, kmax=len(self._ak) - 1, check=self._check)
         return self._ak[k]
 
     def b(self, k: ArrayLike) -> jax.Array:
         """`b` coefficients of the monic three term recurrence relation."""
-        k = _asarray(k, kmax=len(self._bk) - 1)
+        k = _asarray(k, kmax=len(self._bk) - 1, check=self._check)
         return self._bk[k]
 
     def g(self, k: ArrayLike) -> jax.Array:
         """Weighted norm of the kth monic orthogonal polynomial."""
-        k = _asarray(k, kmax=len(self._gk) - 1)
+        k = _asarray(k, kmax=len(self._gk) - 1, check=self._check)
         return self._gk[k]
 
     def m(self, k: ArrayLike) -> jax.Array:
         """Coefficient of x**k in the kth polynomial in the desired normalization."""
-        k = _asarray(k, kmax=len(self._mk) - 1)
+        k = _asarray(k, kmax=len(self._mk) - 1, check=self._check)
         return self._mk[k]
 
 
@@ -840,6 +849,7 @@ def generate_recurrence(
     scale: str = "monic",
     quadrule=None,
     quadopts: Optional[dict] = None,
+    check: bool = True,
 ) -> TabulatedRecurrenceRelation:
     r"""Generate recurrence relation coefficients for orthogonal polynomial family.
 
@@ -871,6 +881,9 @@ def generate_recurrence(
     quadopts : dict, optional
         Additional options passed to ``quadax.adaptive_quadrature``. Default options
         are ``epsabs=1e-15``, ``epsrel=1e-15``, ``max_ninter=500``.
+    check : bool
+        Whether the returned recurrence relation checks that requested indices are
+        within the tabulated range. See ``TabulatedRecurrenceRelation``.
 
     Returns
     -------
@@ -937,4 +950,4 @@ def generate_recurrence(
     else:  # normalized
         m = 1 / g
 
-    return TabulatedRecurrenceRelation(weight, domain, aa, bb, g, m)
+    return TabulatedRecurrenceRelation(weight, domain, aa, bb, g, m, check=check)
