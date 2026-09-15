@@ -70,7 +70,7 @@ Classical Recurrence Relations
 """
 
 import abc
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import equinox as eqx
 import jax
@@ -176,7 +176,7 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
         ak: jax.Array,
         bk: jax.Array,
         gk: jax.Array,
-        mk: Optional[jax.Array] = None,
+        mk: jax.Array | None = None,
         check: bool = True,
     ):
         if mk is None:
@@ -853,9 +853,9 @@ def generate_recurrence(
     n: int,
     scale: str = "monic",
     quadrule=None,
-    quadopts: Optional[dict] = None,
+    quadopts: dict | None = None,
     check: bool = True,
-    tol: Optional[float] = None,
+    tol: float | None = None,
     throw: bool = False,
 ) -> TabulatedRecurrenceRelation:
     r"""Generate recurrence relation coefficients for orthogonal polynomial family.

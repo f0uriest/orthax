@@ -890,7 +890,6 @@ def lagval(x, c, tensor=True):
         c0 = c[0]
         c1 = c[1]
     else:
-
         nd = len(c)
         c0 = c[-2] * jnp.ones_like(x)
         c1 = c[-1] * jnp.ones_like(x)

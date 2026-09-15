@@ -503,7 +503,6 @@ def polyder(c, m=1, scl=1, axis=0):
     if m >= n:
         c = jnp.zeros_like(c[:1])
     else:
-
         D = jnp.arange(n)
 
         def body(i, c):
