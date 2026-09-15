@@ -771,25 +771,20 @@ def chebder(c, m=1, scl=1, axis=0):
     if m >= n:
         c = jnp.zeros_like(c[:1])
     else:
-        # TODO: figure out how to get rid of this python loop
-        for i in range(m):
+        # m is static, so this loop is unrolled at trace time. It cannot be a lax
+        # loop because the number of coefficients changes on each iteration.
+        for _ in range(m):
             n = n - 1
             c *= scl
-            der = jnp.empty((n,) + c.shape[1:], dtype=c.dtype)
-
-            # TODO: can this be vectorized?
-            def body(k, der_c):
-                j = n - k
-                der, c = der_c
-                der = der.at[j - 1].set((2 * j) * c[j])
-                c = c.at[j - 2].add((j * c[j]) / (j - 2))
-                return der, c
-
-            der, c = jax.lax.fori_loop(0, n - 2, body, (der, c))
-            if n > 1:
-                der = der.at[1].set(4 * c[2])
-            der = der.at[0].set(c[1])
-            c = der
+            # T_j' = 2j T_{j-1} + (j/(j-2)) T_{j-2}'. Written in terms of the
+            # rescaled partial sums s_j = j c_j + s_{j+2}, ie a reverse
+            # cumulative sum over coefficients of like parity, the derivative
+            # coefficients are d_{j-1} = 2 s_j, except d_0 = s_1 since T_0
+            # carries no factor of 2. Rescaling by j also avoids the division by
+            # j - 2 that the unscaled recurrence would need.
+            j = jnp.arange(len(c))
+            s = pu._rcumsum((c.T * j).T, 2)[1:]
+            c = (2 * s).at[0].set(s[0])
 
     c = jnp.moveaxis(c, 0, axis)
     return c
@@ -896,7 +891,8 @@ def chebint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     c = jnp.moveaxis(c, axis, 0)
     k = jnp.array(list(k) + [0] * (m - len(k)), ndmin=1)
 
-    # TODO: figure out how to get rid of this python loop
+    # m is static, so this loop is unrolled at trace time. It cannot be a lax
+    # loop because the number of coefficients changes on each iteration.
     for i in range(m):
         n = len(c)
         c *= scl

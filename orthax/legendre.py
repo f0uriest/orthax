@@ -437,15 +437,11 @@ def legmulx(c, mode="full"):
     prd = jnp.zeros(len(c) + 1, dtype=c.dtype)
     prd = prd.at[1].set(c[0])
 
-    def body(i, prd):
-        j = i + 1
-        k = i - 1
-        s = i + j
-        prd = prd.at[j].set((c[i] * j) / s)
-        prd = prd.at[k].add((c[i] * i) / s)
-        return prd
+    i = jnp.arange(1, len(c))
+    s = 2 * i + 1
 
-    prd = jax.lax.fori_loop(1, len(c), body, prd)
+    prd = prd.at[i + 1].set((c[i] * (i + 1)) / s)
+    prd = prd.at[i - 1].add((c[i] * i) / s)
 
     if mode == "same":
         prd = prd[: len(c)]
@@ -684,25 +680,17 @@ def legder(c, m=1, scl=1, axis=0):
     if m >= n:
         c = jnp.zeros_like(c[:1])
     else:
-        # TODO: figure out how to get rid of this python loop
-        for i in range(m):
+        # m is static, so this loop is unrolled at trace time. It cannot be a lax
+        # loop because the number of coefficients changes on each iteration.
+        for _ in range(m):
             n = n - 1
             c *= scl
-            der = jnp.empty((n,) + c.shape[1:], dtype=c.dtype)
-
-            # TODO: can this be vectorized?
-            def body(k, der_c):
-                j = n - k
-                der, c = der_c
-                der = der.at[j - 1].set((2 * j - 1) * c[j])
-                c = c.at[j - 2].add(c[j])
-                return der, c
-
-            der, c = jax.lax.fori_loop(0, n - 2, body, (der, c))
-            if n > 1:
-                der = der.at[1].set(3 * c[2])
-            der = der.at[0].set(c[1])
-            c = der
+            # P_j' = (2j - 1) P_{j-1} + P_{j-2}', so the derivative coefficients
+            # are d_{j-1} = (2j - 1) s_j with s_j = c_j + s_{j+2}, ie a reverse
+            # cumulative sum over coefficients of like parity.
+            s = pu._rcumsum(c, 2)[1:]
+            j = jnp.arange(1, n + 1)
+            c = (s.T * (2 * j - 1)).T
 
     c = jnp.moveaxis(c, 0, axis)
     return c
@@ -809,7 +797,8 @@ def legint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     c = jnp.moveaxis(c, axis, 0)
     k = jnp.array(list(k) + [0] * (m - len(k)), ndmin=1)
 
-    # TODO: figure out how to get rid of this python loop
+    # m is static, so this loop is unrolled at trace time. It cannot be a lax
+    # loop because the number of coefficients changes on each iteration.
     for i in range(m):
         n = len(c)
         c *= scl

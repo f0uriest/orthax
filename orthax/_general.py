@@ -1138,18 +1138,26 @@ def differentiation_matrix(rec, n):
     n += 1
     nn = jnp.arange(n)
     Q = jnp.diag(nn.astype(float))
+    # highest recurrence coefficient index the row update below can reach. Lanes
+    # past it are masked off, so clamping only keeps those lanes finite.
+    kmax = jnp.minimum(nn, max(n - 2, 0))
+    aj = (nn > 0) * a(jnp.maximum(kmax - 1, 0))
+    bj = b(kmax)
 
     def iloop(i, Q):
-        def jloop(j, Q):
-            im1 = jnp.maximum(i - 1, 0)
-            jm1 = jnp.maximum(j - 1, 0)
-            Q = Q.at[i, j].add(((j > 0) * a(jm1) - (i > 0) * a(im1)) * Q[i - 1, j])
-            Q = Q.at[i, j].add((j > 1) * Q[i - 1, j - 1])
-            Q = Q.at[i, j].add(b(j) * Q[i - 1, j + 1])
-            Q = Q.at[i, j].add(-1 * (i > 1) * b(im1) * Q[i - 2, j])
-            return Q
-
-        return jax.lax.fori_loop(0, i, jloop, Q)
+        # Row i depends only on rows i - 1 and i - 2, never on itself, so all of
+        # its columns update independently and the row is done in one shot. The
+        # four terms are applied in the same order as the scalar recurrence and
+        # masked lanes add exactly zero, so the result agrees with it to
+        # round-off.
+        im1 = jnp.maximum(i - 1, 0)
+        q1 = Q[i - 1]
+        mask = nn < i
+        Q = Q.at[i].add(jnp.where(mask, (aj - (i > 0) * a(im1)) * q1, 0.0))
+        Q = Q.at[i].add(jnp.where(mask, (nn > 1) * jnp.roll(q1, 1), 0.0))
+        Q = Q.at[i].add(jnp.where(mask, bj * jnp.roll(q1, -1), 0.0))
+        Q = Q.at[i].add(jnp.where(mask, -1 * (i > 1) * b(im1) * Q[i - 2], 0.0))
+        return Q
 
     Q = jax.lax.fori_loop(0, n, iloop, Q)
     D = jnp.pad(Q[1:, 1:], ((1, 0), (0, 1))).T
@@ -1248,8 +1256,11 @@ def orthder(c, rec, m=1, scl=1, axis=0):
         c = jnp.zeros_like(c[:1])
     else:
         D = differentiation_matrix(rec, len(c) - 1)
-        # TODO: figure out how to get rid of this python loop
-        for i in range(m):
+        # m is static, so this loop is unrolled at trace time. Applying D m times
+        # costs m matrix-vector products, which is cheaper than forming D**m
+        # whenever m is less than the number of coefficients, as guaranteed by
+        # the branch above.
+        for _ in range(m):
             c = D @ c * scl
 
     c = c[:-m]
@@ -1341,7 +1352,9 @@ def orthint(c, rec, m=1, k=[], lbnd=0, scl=1, axis=0):
 
     I = integration_matrix(rec, len(c) + m - 1)
     c = _pad_along_axis(c, (0, m), axis=0)
-    # TODO: figure out how to get rid of this python loop
+    # m is static, so this loop is unrolled at trace time. The integrations cannot
+    # be combined into a single application of I**m because each constant of
+    # integration is determined by the coefficients produced by the previous one.
     for i in range(m):
         c *= scl
         c = I @ c

@@ -673,8 +673,9 @@ def hermeder(c, m=1, scl=1, axis=0):
     if m >= n:
         c = jnp.zeros_like(c[:1])
     else:
-        # TODO: figure out how to get rid of this python loop
-        for i in range(m):
+        # m is static, so this loop is unrolled at trace time. It cannot be a lax
+        # loop because the number of coefficients changes on each iteration.
+        for _ in range(m):
             n = n - 1
             c *= scl
             der = jnp.empty((n,) + c.shape[1:], dtype=c.dtype)
@@ -784,7 +785,8 @@ def hermeint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     c = jnp.moveaxis(c, axis, 0)
     k = jnp.array(list(k) + [0] * (m - len(k)), ndmin=1)
 
-    # TODO: figure out how to get rid of this python loop
+    # m is static, so this loop is unrolled at trace time. It cannot be a lax
+    # loop because the number of coefficients changes on each iteration.
     for i in range(m):
         n = len(c)
         c *= scl

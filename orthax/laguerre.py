@@ -680,23 +680,14 @@ def lagder(c, m=1, scl=1, axis=0):
     if m >= n:
         c = jnp.zeros_like(c[:1])
     else:
-        # TODO: figure out how to get rid of this python loop
-        for i in range(m):
+        # m is static, so this loop is unrolled at trace time. It cannot be a lax
+        # loop because the number of coefficients changes on each iteration.
+        for _ in range(m):
             n = n - 1
             c *= scl
-            der = jnp.empty((n,) + c.shape[1:], dtype=c.dtype)
-
-            # TODO: can this be vectorized?
-            def body(k, der_c):
-                j = n - k
-                der, c = der_c
-                der = der.at[j - 1].set(-c[j])
-                c = c.at[j - 1].add(c[j])
-                return der, c
-
-            der, c = jax.lax.fori_loop(0, n - 1, body, (der, c))
-            der = der.at[0].set(-c[1])
-            c = der
+            # L_j' = -(L_0 + ... + L_{j-1}), so each derivative coefficient is
+            # minus the sum of all higher order input coefficients.
+            c = -pu._rcumsum(c)[1:]
 
     c = jnp.moveaxis(c, 0, axis)
     return c
@@ -802,7 +793,8 @@ def lagint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     c = jnp.moveaxis(c, axis, 0)
     k = jnp.array(list(k) + [0] * (m - len(k)), ndmin=1)
 
-    # TODO: figure out how to get rid of this python loop
+    # m is static, so this loop is unrolled at trace time. It cannot be a lax
+    # loop because the number of coefficients changes on each iteration.
     for i in range(m):
         n = len(c)
         c *= scl

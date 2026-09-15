@@ -572,6 +572,33 @@ def _sub(c1, c2):
     return ret
 
 
+def _rcumsum(c, stride=1):
+    """Reverse cumulative sum along axis 0 over entries separated by ``stride``.
+
+    Parameters
+    ----------
+    c : ndarray
+        Array to accumulate.
+    stride : int
+        Spacing between accumulated entries. Must be a positive python int.
+
+    Returns
+    -------
+    out : ndarray
+        Array of the same shape as `c` with ``out[i] = c[i] + out[i + stride]``,
+        ie each entry is the sum of all entries at or after it whose index
+        differs from it by a multiple of `stride`.
+
+    """
+    if stride == 1:
+        return jnp.cumsum(c[::-1], axis=0)[::-1]
+    out = jnp.zeros_like(c)
+    # each residue class mod stride accumulates independently
+    for s in range(stride):
+        out = out.at[s::stride].set(jnp.cumsum(c[s::stride][::-1], axis=0)[::-1])
+    return out
+
+
 def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
     """
     Helper function used to implement the ``<type>fit`` functions.
