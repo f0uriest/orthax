@@ -70,32 +70,40 @@ Classical Recurrence Relations
 """
 
 import abc
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, TypeAlias
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+import numpy as np
 from jax.scipy.special import gammaln
 from jax.typing import ArrayLike
 
+if TYPE_CHECKING:
+    import quadax
 
-def _asarray(k, kmax=None, check=True):
-    k = jnp.asarray(k)
+# Lower and upper bounds of an interval, as any length 2 sequence or array of numbers.
+Domain: TypeAlias = Sequence[ArrayLike] | jax.Array | np.ndarray
+
+
+def _asarray(k: ArrayLike, kmax: int | None = None, check: bool = True) -> jax.Array:
+    karr = jnp.asarray(k)
     if not check:
-        return k
-    k = eqx.error_if(
-        k,
-        (k < 0).any(),
+        return karr
+    karr = eqx.error_if(
+        karr,
+        (karr < 0).any(),
         "Negative indices not allowed for recurrence coefficients.",
     )
     if kmax is not None:
-        k = eqx.error_if(
-            k,
-            (k > kmax).any(),
+        karr = eqx.error_if(
+            karr,
+            (karr > kmax).any(),
             "Requested recurrence coefficient outside of tabulated range.",
         )
 
-    return k
+    return karr
 
 
 class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
@@ -105,7 +113,7 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
     `weight`, `a`, `b`, `g`, `m`
     """
 
-    _domain: tuple[float, float]
+    _domain: Domain
 
     @abc.abstractmethod
     def weight(self, x: ArrayLike) -> jax.Array:
@@ -113,8 +121,8 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
         pass
 
     @property
-    def domain(self) -> tuple[jax.Array, jax.Array]:
-        """tuple: Lower and upper bounds for inner product defining orthogonality."""
+    def domain(self) -> Domain:
+        """array_like: Lower and upper bounds for inner product."""
         return self._domain
 
     @abc.abstractmethod
@@ -145,8 +153,9 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
     ----------
     weight : callable
         Weight function.
-    domain : tuple
-        Lower and upper bounds for inner product defining orthogonality.
+    domain : array_like
+        Lower and upper bounds for inner product defining orthogonality, as a length
+        2 sequence or array.
     a, b : jax.Array
         Coefficients of the monic three term recurrence relation.
     g : jax.Array
@@ -172,7 +181,7 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
     def __init__(
         self,
         weight: Callable,
-        domain: tuple,
+        domain: Domain,
         ak: jax.Array,
         bk: jax.Array,
         gk: jax.Array,
@@ -219,8 +228,9 @@ class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
 
     Parameters
     ----------
-    domain : tuple
-        Lower and upper bounds for inner product defining orthogonality.
+    domain : array_like
+        Lower and upper bounds for inner product defining orthogonality, as a length
+        2 sequence or array.
     scale : {"standard", "monic", "normalized"}
         Most classical orthogonal polynomials have ad-hoc normalizations (ie,
         the common definitions in textbooks are neither monic nor unit norm). This
@@ -230,19 +240,19 @@ class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
 
     _scale: str = eqx.field(static=True)
 
-    def __init__(self, domain: tuple, scale: str = "standard"):
+    def __init__(self, domain: Domain, scale: str = "standard"):
         assert scale in {"standard", "monic", "normalized"}
 
         self._domain = domain
         self._scale = scale
 
     @abc.abstractmethod
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         # norm of the kth polynomial in "standard" scaling (ie, AS, wikipedia, etc)
         pass
 
     @abc.abstractmethod
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         # coefficient of x**k in "standard" scaling (ie, AS, wikipedia, etc)
         pass
 
@@ -304,10 +314,10 @@ class Legendre(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, 2, 1 / (4 - 1 / jnp.where(k == 0, 1, k) ** 2))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(2 / (2 * k + 1))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.exp(
             k * jnp.log(2) - gammaln(k + 1) + gammaln(k + 0.5) - gammaln(0.5)
         )
@@ -344,10 +354,10 @@ class ShiftedLegendre(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, 1, 0.25 / (4 - 1 / jnp.where(k == 0, 1, k) ** 2))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(1 / (2 * k + 1))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.exp(
             2 * k * jnp.log(2) - gammaln(k + 1) + gammaln(k + 0.5) - gammaln(0.5)
         )
@@ -385,10 +395,10 @@ class ChebyshevT(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.pi, jnp.where(k == 1, 1 / 2, 1 / 4))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(jnp.where(k == 0, jnp.pi, jnp.pi / 2))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.where(k == 0, 1, 2 ** jnp.maximum(0.0, k - 1.0))
 
 
@@ -424,10 +434,10 @@ class ChebyshevU(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.pi / 2, 1 / 4)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.full(k.shape, jnp.sqrt(jnp.pi / 2))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return 2 ** jnp.asarray(k).astype(float)
 
 
@@ -463,10 +473,10 @@ class ChebyshevV(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.pi, 1 / 4)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.full(k.shape, jnp.sqrt(jnp.pi))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return 2 ** jnp.asarray(k).astype(float)
 
 
@@ -502,10 +512,10 @@ class ChebyshevW(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.pi, 1 / 4)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.full(k.shape, jnp.sqrt(jnp.pi))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return 2 ** jnp.asarray(k).astype(float)
 
 
@@ -530,14 +540,13 @@ class Gegenbauer(ClassicalRecurrenceRelation):
     lmbda: jax.Array
 
     def __init__(self, lmbda: ArrayLike, scale: str = "standard"):
-        lmbda = jnp.asarray(lmbda)
-        lmbda = eqx.error_if(lmbda, lmbda <= -0.5, "lmbda must be > -1/2")
+        lam = jnp.asarray(lmbda)
+        lam = eqx.error_if(lam, lam <= -0.5, "lmbda must be > -1/2")
         lam_zero_err = """
         Classical Gegenbauer polynomials are undefined for lmbda==0,
         consider using ChebyshevT which has similar orthogonality properties
         but with a well behaved normalization"""
-        lmbda = eqx.error_if(lmbda, lmbda == 0.0, lam_zero_err)
-        self.lmbda = lmbda
+        self.lmbda = eqx.error_if(lam, lam == 0.0, lam_zero_err)
         super().__init__(domain=(-1, 1), scale=scale)
 
     def weight(self, x: ArrayLike) -> jax.Array:
@@ -562,7 +571,7 @@ class Gegenbauer(ClassicalRecurrenceRelation):
         )
         return jnp.where(k == 0, b0, bknum / jnp.where(k == 0, 1, bkden))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         lognum = (
             (1 - 2 * self.lmbda) * jnp.log(2)
             + jnp.log(jnp.pi)
@@ -574,7 +583,7 @@ class Gegenbauer(ClassicalRecurrenceRelation):
         )
         return sgn * jnp.exp(0.5 * (lognum - logden))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.exp(
             k * jnp.log(2)
             - gammaln(k + 1)
@@ -642,13 +651,13 @@ class Jacobi(ClassicalRecurrenceRelation):
         )
         return jnp.where(k == 0, b0, num / den)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         a, b = self.alpha, self.beta
         lognum = (a + b + 1) * jnp.log(2) + gammaln(k + a + 1) + gammaln(k + b + 1)
         logden = jnp.log(2 * k + a + b + 1) + gammaln(k + a + b + 1) + gammaln(k + 1)
         return jnp.exp(0.5 * (lognum - logden))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         a, b = self.alpha, self.beta
         logm = (
             gammaln(2 * k + a + b + 1)
@@ -691,10 +700,10 @@ class Laguerre(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, 1, k**2)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.ones(jnp.asarray(k).shape)
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return (-1) ** k * jnp.exp(-gammaln(k + 1))
 
 
@@ -736,10 +745,10 @@ class GeneralizedLaguerre(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.exp(gammaln(self.alpha + 1)), k * (k + self.alpha))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.exp(-0.5 * gammaln(k + 1) + 0.5 * gammaln(k + self.alpha + 1))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return (-1) ** k * jnp.exp(-gammaln(k + 1))
 
 
@@ -775,10 +784,10 @@ class Hermite(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.sqrt(jnp.pi), k / 2)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(jnp.sqrt(jnp.pi)) * 2 ** (k / 2) * jnp.exp(gammaln(k + 1) / 2)
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return 2 ** jnp.asarray(k).astype(float)
 
 
@@ -814,14 +823,16 @@ class HermiteE(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.sqrt(2 * jnp.pi), k)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(jnp.sqrt(2 * jnp.pi)) * jnp.exp(gammaln(k + 1) / 2)
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.ones_like(k)
 
 
-def _orthonormal_polyval(x, n, a, sb):
+def _orthonormal_polyval(
+    x: ArrayLike, n: ArrayLike, a: jax.Array, sb: jax.Array
+) -> jax.Array:
     """Evaluate p_n from sb_{k+1} p_{k+1} = (x - a_k) p_k - sb_k p_{k-1}."""
     x = jnp.asarray(x)
 
@@ -833,7 +844,7 @@ def _orthonormal_polyval(x, n, a, sb):
     return jax.lax.fori_loop(0, n, body, init)[1]
 
 
-def _orthonormal_basis(x, a, sb):
+def _orthonormal_basis(x: ArrayLike, a: jax.Array, sb: jax.Array) -> jax.Array:
     """Evaluate p_0, ..., p_{n-1} from the same recurrence, for n = len(a)."""
     x = jnp.asarray(x)
 
@@ -849,10 +860,10 @@ def _orthonormal_basis(x, a, sb):
 
 def generate_recurrence(
     weight: Callable,
-    domain: tuple,
+    domain: Domain,
     n: int,
     scale: str = "monic",
-    quadrule=None,
+    quadrule: "quadax.AbstractQuadratureRule | None" = None,
     quadopts: dict | None = None,
     check: bool = True,
     tol: float | None = None,
@@ -876,8 +887,9 @@ def generate_recurrence(
     ----------
     weight : callable
         Weight function.
-    domain : tuple of float
-        Lower and upper bounds for the domain of the polynomials.
+    domain : array_like
+        Lower and upper bounds for the domain of the polynomials, as a length 2
+        sequence or array.
     n : int
         Number of terms to generate, ie, highest order of polynomial desired.
     scale : {"monic", "normalized"}

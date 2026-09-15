@@ -66,13 +66,15 @@ Misc Functions
 
 """
 
-import functools
+from collections.abc import Sequence
+from typing import Literal, overload
 
 import jax
 import jax.numpy as jnp
-from jax import jit
+from jax.typing import ArrayLike
 
 from . import polyutils as pu
+from ._utils import wrap_jit
 
 __all__ = [
     "legzero",
@@ -110,8 +112,8 @@ __all__ = [
 legtrim = pu.trimcoef
 
 
-@jit
-def poly2leg(pol):
+@wrap_jit()
+def poly2leg(pol: ArrayLike) -> jax.Array:
     """Convert a polynomial to a Legendre series.
 
     Convert an array representing the coefficients of a polynomial (relative
@@ -149,8 +151,8 @@ def poly2leg(pol):
     return res
 
 
-@jit
-def leg2poly(c):
+@wrap_jit()
+def leg2poly(c: ArrayLike) -> jax.Array:
     """Convert a Legendre series to a polynomial.
 
     Convert an array representing the coefficients of a Legendre series,
@@ -213,8 +215,8 @@ legx = jnp.array([0, 1])
 """Legendre coefficients representing the identity x."""
 
 
-@jit
-def legline(off, scl):
+@wrap_jit()
+def legline(off: ArrayLike, scl: ArrayLike) -> jax.Array:
     """Legendre series whose graph is a straight line.
 
     Parameters
@@ -248,8 +250,8 @@ def legline(off, scl):
     return jnp.array([off, scl])
 
 
-@jit
-def legfromroots(roots):
+@wrap_jit()
+def legfromroots(roots: ArrayLike) -> jax.Array:
     """Generate a Legendre series with given roots.
 
     The function returns the coefficients of the polynomial
@@ -303,8 +305,8 @@ def legfromroots(roots):
     return pu._fromroots(legline, legmul, roots)
 
 
-@jit
-def legadd(c1, c2):
+@wrap_jit()
+def legadd(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """
     Add one Legendre series to another.
 
@@ -346,8 +348,8 @@ def legadd(c1, c2):
     return pu._add(c1, c2)
 
 
-@jit
-def legsub(c1, c2):
+@wrap_jit()
+def legsub(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """
     Subtract one Legendre series from another.
 
@@ -391,8 +393,8 @@ def legsub(c1, c2):
     return pu._sub(c1, c2)
 
 
-@functools.partial(jit, static_argnames="mode")
-def legmulx(c, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def legmulx(c: ArrayLike, mode: str = "full") -> jax.Array:
     """Multiply a Legendre series by x.
 
     Multiply the Legendre series `c` by x, where x is the independent
@@ -448,8 +450,8 @@ def legmulx(c, mode="full"):
     return prd
 
 
-@functools.partial(jit, static_argnames="mode")
-def legmul(c1, c2, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def legmul(c1: ArrayLike, c2: ArrayLike, mode: str = "full") -> jax.Array:
     """
     Multiply one Legendre series by another.
 
@@ -528,8 +530,8 @@ def legmul(c1, c2, mode="full"):
     return ret
 
 
-@jit
-def legdiv(c1, c2):
+@wrap_jit()
+def legdiv(c1: ArrayLike, c2: ArrayLike) -> tuple[jax.Array, jax.Array]:
     """Divide one Legendre series by another.
 
     Returns the quotient-with-remainder of two Legendre series
@@ -577,8 +579,8 @@ def legdiv(c1, c2):
     return pu._div(legmul, c1, c2)
 
 
-@functools.partial(jit, static_argnames=("pow", "maxpower"))
-def legpow(c, pow, maxpower=16):
+@wrap_jit(static_argnames=("pow", "maxpower"))
+def legpow(c: ArrayLike, pow: int, maxpower: int | None = 16) -> jax.Array:
     """Raise a Legendre series to a power.
 
     Returns the Legendre series `c` raised to the power `pow`. The
@@ -609,8 +611,8 @@ def legpow(c, pow, maxpower=16):
     return pu._pow(legmul, c, pow, maxpower)
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def legder(c, m=1, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def legder(c: ArrayLike, m: int = 1, scl: ArrayLike = 1, axis: int = 0) -> jax.Array:
     """Differentiate a Legendre series.
 
     Returns the Legendre series coefficients `c` differentiated `m` times
@@ -696,8 +698,15 @@ def legder(c, m=1, scl=1, axis=0):
     return c
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def legint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def legint(
+    c: ArrayLike,
+    m: int = 1,
+    k: ArrayLike | Sequence[ArrayLike] = [],
+    lbnd: ArrayLike = 0,
+    scl: ArrayLike = 1,
+    axis: int = 0,
+) -> jax.Array:
     """Integrate a Legendre series.
 
     Returns the Legendre series coefficients `c` integrated `m` times from
@@ -817,8 +826,8 @@ def legint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     return c
 
 
-@functools.partial(jit, static_argnames=("tensor",))
-def legval(x, c, tensor=True):
+@wrap_jit(static_argnames=("tensor",))
+def legval(x: ArrayLike, c: ArrayLike, tensor: bool = True) -> jax.Array:
     """Evaluate a Legendre series at points x.
 
     If `c` is of length `n + 1`, this function returns the value:
@@ -903,8 +912,8 @@ def legval(x, c, tensor=True):
     return c0 + c1 * x
 
 
-@jit
-def legval2d(x, y, c):
+@wrap_jit()
+def legval2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D Legendre series at points (x, y).
 
     This function returns the values:
@@ -947,8 +956,8 @@ def legval2d(x, y, c):
     return pu._valnd(legval, c, x, y)
 
 
-@jit
-def leggrid2d(x, y, c):
+@wrap_jit()
+def leggrid2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D Legendre series on the Cartesian product of x and y.
 
     This function returns the values:
@@ -995,8 +1004,8 @@ def leggrid2d(x, y, c):
     return pu._gridnd(legval, c, x, y)
 
 
-@jit
-def legval3d(x, y, z, c):
+@wrap_jit()
+def legval3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D Legendre series at points (x, y, z).
 
     This function returns the values:
@@ -1041,8 +1050,8 @@ def legval3d(x, y, z, c):
     return pu._valnd(legval, c, x, y, z)
 
 
-@jit
-def leggrid3d(x, y, z, c):
+@wrap_jit()
+def leggrid3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D Legendre series on the Cartesian product of x, y, and z.
 
     This function returns the values:
@@ -1092,8 +1101,8 @@ def leggrid3d(x, y, z, c):
     return pu._gridnd(legval, c, x, y, z)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def legvander(x, deg):
+@wrap_jit(static_argnames=("deg",))
+def legvander(x: ArrayLike, deg: int) -> jax.Array:
     r"""Pseudo-Vandermonde matrix of given degree.
 
     Returns the pseudo-Vandermonde matrix of degree `deg` and sample points
@@ -1148,8 +1157,8 @@ def legvander(x, deg):
     return jnp.moveaxis(v, 0, -1)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def legvander2d(x, y, deg):
+@wrap_jit(static_argnames=("deg",))
+def legvander2d(x: ArrayLike, y: ArrayLike, deg: Sequence[int]) -> jax.Array:
     r"""Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1197,8 +1206,10 @@ def legvander2d(x, y, deg):
     return pu._vander_nd_flat((legvander, legvander), (x, y), deg)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def legvander3d(x, y, z, deg):
+@wrap_jit(static_argnames=("deg",))
+def legvander3d(
+    x: ArrayLike, y: ArrayLike, z: ArrayLike, deg: Sequence[int]
+) -> jax.Array:
     r"""Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1247,8 +1258,49 @@ def legvander3d(x, y, z, deg):
     return pu._vander_nd_flat((legvander, legvander, legvander), (x, y, z), deg)
 
 
-@functools.partial(jit, static_argnames=("deg", "full"))
-def legfit(x, y, deg, rcond=None, full=False, w=None):
+@overload
+def legfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: Literal[False] = False,
+    w: ArrayLike | None = None,
+) -> jax.Array: ...
+
+
+@overload
+def legfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@overload
+def legfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    *,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@wrap_jit(static_argnames=("deg", "full"))
+def legfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: bool = False,
+    w: ArrayLike | None = None,
+) -> jax.Array | tuple[jax.Array, list[jax.Array]]:
     r"""Least squares fit of Legendre series to data.
 
     Return the coefficients of a Legendre series of degree `deg` that is the
@@ -1355,8 +1407,8 @@ def legfit(x, y, deg, rcond=None, full=False, w=None):
     return pu._fit(legvander, x, y, deg, rcond, full, w)
 
 
-@jit
-def legcompanion(c):
+@wrap_jit()
+def legcompanion(c: ArrayLike) -> jax.Array:
     """Return the scaled companion matrix of c.
 
     The basis polynomials are scaled so that the companion matrix is
@@ -1395,8 +1447,8 @@ def legcompanion(c):
     return mat
 
 
-@jit
-def legroots(c):
+@wrap_jit()
+def legroots(c: ArrayLike) -> jax.Array:
     r"""Compute the roots of a Legendre series.
 
     Return the roots (a.k.a. "zeros") of the polynomial
@@ -1455,7 +1507,7 @@ def legroots(c):
     return r
 
 
-def leggauss(deg):
+def leggauss(deg: int) -> tuple[jax.Array, jax.Array]:
     """Gauss-Legendre quadrature.
 
     Computes the sample points and weights for Gauss-Legendre quadrature.
@@ -1519,7 +1571,7 @@ def leggauss(deg):
     return x, w
 
 
-def legweight(x):
+def legweight(x: ArrayLike) -> jax.Array:
     """
     Weight function of the Legendre polynomials.
 
@@ -1542,8 +1594,8 @@ def legweight(x):
     return w
 
 
-@jit
-def legnorm(n):
+@wrap_jit()
+def legnorm(n: ArrayLike) -> jax.Array:
     r"""Norm of nth Legendre polynomial.
 
     The norm :math:`\gamma_n` is defined such that

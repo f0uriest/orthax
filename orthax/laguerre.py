@@ -62,13 +62,15 @@ Misc Functions
 
 """
 
-import functools
+from collections.abc import Sequence
+from typing import Literal, overload
 
 import jax
 import jax.numpy as jnp
-from jax import jit
+from jax.typing import ArrayLike
 
 from . import polyutils as pu
+from ._utils import wrap_jit
 
 __all__ = [
     "lagzero",
@@ -106,8 +108,8 @@ __all__ = [
 lagtrim = pu.trimcoef
 
 
-@jit
-def poly2lag(pol):
+@wrap_jit()
+def poly2lag(pol: ArrayLike) -> jax.Array:
     """Convert a polynomial to a Laguerre series.
 
     Convert an array representing the coefficients of a polynomial (relative
@@ -148,8 +150,8 @@ def poly2lag(pol):
     return res
 
 
-@jit
-def lag2poly(c):
+@wrap_jit()
+def lag2poly(c: ArrayLike) -> jax.Array:
     """Convert a Laguerre series to a polynomial.
 
     Convert an array representing the coefficients of a Laguerre series,
@@ -218,8 +220,8 @@ lagx = jnp.array([1, -1])
 """Laguerre coefficients representing the identity x."""
 
 
-@jit
-def lagline(off, scl):
+@wrap_jit()
+def lagline(off: ArrayLike, scl: ArrayLike) -> jax.Array:
     """
     Laguerre series whose graph is a straight line.
 
@@ -251,11 +253,12 @@ def lagline(off, scl):
     5.0
 
     """
+    scl = jnp.asarray(scl)
     return jnp.array([off + scl, -scl])
 
 
-@jit
-def lagfromroots(roots):
+@wrap_jit()
+def lagfromroots(roots: ArrayLike) -> jax.Array:
     """
     Generate a Laguerre series with given roots.
 
@@ -311,8 +314,8 @@ def lagfromroots(roots):
     return pu._fromroots(lagline, lagmul, roots)
 
 
-@jit
-def lagadd(c1, c2):
+@wrap_jit()
+def lagadd(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """Add one Laguerre series to another.
 
     Returns the sum of two Laguerre series `c1` + `c2`.  The arguments
@@ -352,8 +355,8 @@ def lagadd(c1, c2):
     return pu._add(c1, c2)
 
 
-@jit
-def lagsub(c1, c2):
+@wrap_jit()
+def lagsub(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """
     Subtract one Laguerre series from another.
 
@@ -393,8 +396,8 @@ def lagsub(c1, c2):
     return pu._sub(c1, c2)
 
 
-@functools.partial(jit, static_argnames="mode")
-def lagmulx(c, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def lagmulx(c: ArrayLike, mode: str = "full") -> jax.Array:
     """Multiply a Laguerre series by x.
 
     Multiply the Laguerre series `c` by x, where x is the independent
@@ -452,8 +455,8 @@ def lagmulx(c, mode="full"):
     return prd
 
 
-@functools.partial(jit, static_argnames="mode")
-def lagmul(c1, c2, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def lagmul(c1: ArrayLike, c2: ArrayLike, mode: str = "full") -> jax.Array:
     """Multiply one Laguerre series by another.
 
     Returns the product of two Laguerre series `c1` * `c2`.  The arguments
@@ -530,8 +533,8 @@ def lagmul(c1, c2, mode="full"):
     return ret
 
 
-@jit
-def lagdiv(c1, c2):
+@wrap_jit()
+def lagdiv(c1: ArrayLike, c2: ArrayLike) -> tuple[jax.Array, jax.Array]:
     """Divide one Laguerre series by another.
 
     Returns the quotient-with-remainder of two Laguerre series
@@ -576,8 +579,8 @@ def lagdiv(c1, c2):
     return pu._div(lagmul, c1, c2)
 
 
-@functools.partial(jit, static_argnames=("pow", "maxpower"))
-def lagpow(c, pow, maxpower=16):
+@wrap_jit(static_argnames=("pow", "maxpower"))
+def lagpow(c: ArrayLike, pow: int, maxpower: int | None = 16) -> jax.Array:
     """Raise a Laguerre series to a power.
 
     Returns the Laguerre series `c` raised to the power `pow`. The
@@ -614,8 +617,8 @@ def lagpow(c, pow, maxpower=16):
     return pu._pow(lagmul, c, pow, maxpower)
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def lagder(c, m=1, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def lagder(c: ArrayLike, m: int = 1, scl: ArrayLike = 1, axis: int = 0) -> jax.Array:
     """Differentiate a Laguerre series.
 
     Returns the Laguerre series coefficients `c` differentiated `m` times
@@ -693,8 +696,15 @@ def lagder(c, m=1, scl=1, axis=0):
     return c
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def lagint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def lagint(
+    c: ArrayLike,
+    m: int = 1,
+    k: ArrayLike | Sequence[ArrayLike] = [],
+    lbnd: ArrayLike = 0,
+    scl: ArrayLike = 1,
+    axis: int = 0,
+) -> jax.Array:
     """Integrate a Laguerre series.
 
     Returns the Laguerre series coefficients `c` integrated `m` times from
@@ -811,8 +821,8 @@ def lagint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     return c
 
 
-@functools.partial(jit, static_argnames=("tensor",))
-def lagval(x, c, tensor=True):
+@wrap_jit(static_argnames=("tensor",))
+def lagval(x: ArrayLike, c: ArrayLike, tensor: bool = True) -> jax.Array:
     """Evaluate a Laguerre series at points x.
 
     If `c` is of length `n + 1`, this function returns the value:
@@ -907,8 +917,8 @@ def lagval(x, c, tensor=True):
     return c0 + c1 * (1 - x)
 
 
-@jit
-def lagval2d(x, y, c):
+@wrap_jit()
+def lagval2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D Laguerre series at points (x, y).
 
     This function returns the values:
@@ -951,8 +961,8 @@ def lagval2d(x, y, c):
     return pu._valnd(lagval, c, x, y)
 
 
-@jit
-def laggrid2d(x, y, c):
+@wrap_jit()
+def laggrid2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D Laguerre series on the Cartesian product of x and y.
 
     This function returns the values:
@@ -999,8 +1009,8 @@ def laggrid2d(x, y, c):
     return pu._gridnd(lagval, c, x, y)
 
 
-@jit
-def lagval3d(x, y, z, c):
+@wrap_jit()
+def lagval3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D Laguerre series at points (x, y, z).
 
     This function returns the values:
@@ -1045,8 +1055,8 @@ def lagval3d(x, y, z, c):
     return pu._valnd(lagval, c, x, y, z)
 
 
-@jit
-def laggrid3d(x, y, z, c):
+@wrap_jit()
+def laggrid3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D Laguerre series on the Cartesian product of x, y, and z.
 
     This function returns the values:
@@ -1096,8 +1106,8 @@ def laggrid3d(x, y, z, c):
     return pu._gridnd(lagval, c, x, y, z)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def lagvander(x, deg):
+@wrap_jit(static_argnames=("deg",))
+def lagvander(x: ArrayLike, deg: int) -> jax.Array:
     """Pseudo-Vandermonde matrix of given degree.
 
     Returns the pseudo-Vandermonde matrix of degree `deg` and sample points
@@ -1161,8 +1171,8 @@ def lagvander(x, deg):
     return jnp.moveaxis(v, 0, -1)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def lagvander2d(x, y, deg):
+@wrap_jit(static_argnames=("deg",))
+def lagvander2d(x: ArrayLike, y: ArrayLike, deg: Sequence[int]) -> jax.Array:
     r"""Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1210,8 +1220,10 @@ def lagvander2d(x, y, deg):
     return pu._vander_nd_flat((lagvander, lagvander), (x, y), deg)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def lagvander3d(x, y, z, deg):
+@wrap_jit(static_argnames=("deg",))
+def lagvander3d(
+    x: ArrayLike, y: ArrayLike, z: ArrayLike, deg: Sequence[int]
+) -> jax.Array:
     r"""Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1260,8 +1272,49 @@ def lagvander3d(x, y, z, deg):
     return pu._vander_nd_flat((lagvander, lagvander, lagvander), (x, y, z), deg)
 
 
-@functools.partial(jit, static_argnames=("deg", "full"))
-def lagfit(x, y, deg, rcond=None, full=False, w=None):
+@overload
+def lagfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: Literal[False] = False,
+    w: ArrayLike | None = None,
+) -> jax.Array: ...
+
+
+@overload
+def lagfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@overload
+def lagfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    *,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@wrap_jit(static_argnames=("deg", "full"))
+def lagfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: bool = False,
+    w: ArrayLike | None = None,
+) -> jax.Array | tuple[jax.Array, list[jax.Array]]:
     r"""Least squares fit of Laguerre series to data.
 
     Return the coefficients of a Laguerre series of degree `deg` that is the
@@ -1376,8 +1429,8 @@ def lagfit(x, y, deg, rcond=None, full=False, w=None):
     return pu._fit(lagvander, x, y, deg, rcond, full, w)
 
 
-@jit
-def lagcompanion(c):
+@wrap_jit()
+def lagcompanion(c: ArrayLike) -> jax.Array:
     """Return the companion matrix of c.
 
     The usual companion matrix of the Laguerre polynomials is already
@@ -1412,8 +1465,8 @@ def lagcompanion(c):
     return mat
 
 
-@jit
-def lagroots(c):
+@wrap_jit()
+def lagroots(c: ArrayLike) -> jax.Array:
     r"""Compute the roots of a Laguerre series.
 
     Return the roots (a.k.a. "zeros") of the polynomial
@@ -1475,7 +1528,7 @@ def lagroots(c):
     return r
 
 
-def laggauss(deg):
+def laggauss(deg: int) -> tuple[jax.Array, jax.Array]:
     r"""Gauss-Laguerre quadrature.
 
     Computes the sample points and weights for Gauss-Laguerre quadrature.
@@ -1535,8 +1588,8 @@ def laggauss(deg):
     return x, w
 
 
-@jit
-def lagweight(x):
+@wrap_jit()
+def lagweight(x: ArrayLike) -> jax.Array:
     r"""Weight function of the Laguerre polynomials.
 
     The weight function is :math:`exp(-x)` and the interval of integration
@@ -1554,12 +1607,13 @@ def lagweight(x):
        The weight function at `x`.
 
     """
+    x = jnp.asarray(x)
     w = jnp.exp(-x)
     return w
 
 
-@jit
-def lagnorm(n):
+@wrap_jit()
+def lagnorm(n: ArrayLike) -> jax.Array:
     r"""Norm of nth Laguerre polynomial.
 
     The norm :math:`\gamma_n` is defined such that

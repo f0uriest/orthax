@@ -26,13 +26,13 @@ class TestMisc:
         # n_dims != len(points)  noqa:E800
         assert_raises(ValueError, pu._vander_nd, (), (1, 2, 3), [90])
         # n_dims != len(degrees)  noqa:E800
-        assert_raises(ValueError, pu._vander_nd, (), (), [90.65])
+        assert_raises(ValueError, pu._vander_nd, (), (), [90.65])  # pyright: ignore[reportArgumentType]
         # n_dims == 0  noqa:E800
         assert_raises(ValueError, pu._vander_nd, (), (), [])
 
     def test_pow_too_large(self):
         # power > maxpower
-        assert_raises(ValueError, pu._pow, (), [1, 2, 3], 5, 4)
+        assert_raises(ValueError, pu._pow, (), np.array([1, 2, 3]), 5, 4)  # pyright: ignore[reportArgumentType]
 
 
 class TestDomain:
@@ -40,13 +40,13 @@ class TestDomain:
         # test for real values
         x = [1, 10, 3, -1]
         tgt = [-1, 10]
-        res = pu.getdomain(x)
+        res = pu.getdomain(np.array(x))
         assert_array_equal(res, tgt)
 
         # test for complex values
         x = [1 + 1j, 1 - 1j, 0, 2]
         tgt = [-1j, 2 + 1j]
-        res = pu.getdomain(x)
+        res = pu.getdomain(np.array(x))
         assert_array_equal(res, tgt)
 
     def test_mapdomain(self):
@@ -54,7 +54,7 @@ class TestDomain:
         dom1 = [0, 4]
         dom2 = [1, 3]
         tgt = dom2
-        res = pu.mapdomain(dom1, dom1, dom2)
+        res = pu.mapdomain(np.array(dom1), np.array(dom1), np.array(dom2))
         assert_array_equal(res, tgt)
 
         # test for complex values
@@ -62,7 +62,7 @@ class TestDomain:
         dom2 = [-2, 2]
         tgt = dom2
         x = dom1
-        res = pu.mapdomain(x, dom1, dom2)
+        res = pu.mapdomain(np.array(x), np.array(dom1), np.array(dom2))
         assert_array_equal(res, tgt)
 
         # test for multidimensional arrays
@@ -70,7 +70,7 @@ class TestDomain:
         dom2 = [1, 3]
         tgt = np.array([dom2, dom2])
         x = np.array([dom1, dom1])
-        res = pu.mapdomain(x, dom1, dom2)
+        res = pu.mapdomain(x, np.array(dom1), np.array(dom2))
         assert_array_equal(res, tgt)
 
     def test_mapparms(self):
@@ -78,12 +78,12 @@ class TestDomain:
         dom1 = [0, 4]
         dom2 = [1, 3]
         tgt = [1, 0.5]
-        res = pu.mapparms(dom1, dom2)
+        res = pu.mapparms(np.array(dom1), np.array(dom2))
         assert_array_equal(res, tgt)
 
         # test for complex values
         dom1 = [0 - 1j, 2 + 1j]
         dom2 = [-2, 2]
         tgt = [-1 + 1j, 1 - 1j]
-        res = pu.mapparms(dom1, dom2)
+        res = pu.mapparms(np.array(dom1), np.array(dom2))
         assert_array_equal(res, tgt)

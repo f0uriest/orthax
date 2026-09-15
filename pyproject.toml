@@ -32,6 +32,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering",
   "Topic :: Scientific/Engineering :: Mathematics",
+  "Typing :: Typed",
 ]
 dependencies = [
   "equinox >= 0.11.0, < 0.14",
@@ -56,6 +57,7 @@ lint = [
   # keep this pin in sync with .pre-commit-config.yaml and .github/workflows/ruff.yml
   "ruff == 0.16.7",
   "pre-commit < 4.8",
+  "pyright < 1.2",
 ]
 # everything needed to develop orthax: `pip install -e ".[dev]"`
 dev = ["orthax[test,docs,lint]", "build"]
@@ -69,6 +71,9 @@ Contributing = "https://github.com/f0uriest/orthax/blob/master/CONTRIBUTING.rst"
 
 [tool.setuptools.packages.find]
 exclude = ["build*", "docs*", "tests*", "local*", "report*"]
+
+[tool.setuptools.package-data]
+orthax = ["py.typed"]
 
 [tool.versioneer]
 VCS = "git"
@@ -111,6 +116,10 @@ exclude_lines = [
   "if __name__ == .__main__.:",
 ]
 ignore_errors = true
+
+[tool.pyright]
+include = ["orthax/*.py", "tests/*.py"]
+exclude = ["orthax/_version.py", "docs/*", "build/*", "setup.py"]
 
 [tool.ruff]
 line-length = 88
