@@ -18,6 +18,8 @@ differentiation matrix used by `orthder` and `orthint`.
 - Type hints throughout, and orthax is now marked as typed (PEP 561). Array arguments
 are hinted as `jax.typing.ArrayLike`. Lists and tuples are still accepted, but are not
 included in the type hints since converting them can be a silent performance cost.
+- Bumps maximum jax version to 0.11 and maximum numpy version to 2.5.
+- Bumps minimum jax version to 0.5.0 and minimum numpy version to 1.25.0.
 
 **Full Changelog**: https://github.com/f0uriest/orthax/compare/v0.2.9...main
 
