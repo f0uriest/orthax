@@ -115,7 +115,7 @@ jobs:
           lscpu
           python -m pytest \
             --durations=0 \
-            --maxfail=1 \
+            --maxfail=1
       # GitHub does not expose per-cell outcomes of a matrix job in the needs
       # context; it only provides an aggregate {result, outputs} object. Record
       # each version's outcome to an artifact instead so the report job can

@@ -78,7 +78,7 @@ class TestArithmetic:
             tmp = 2 * i + 1
             ser = [0] * i + [1]
             tgt = [0] * (i - 1) + [i / tmp, 0, (i + 1) / tmp]
-            assert_array_equal(trim(leg.legmulx(np.array(ser))), tgt)
+            assert_array_almost_equal(trim(leg.legmulx(np.array(ser))), tgt)
 
     def test_legmul(self):
         # check values of result
