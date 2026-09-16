@@ -69,13 +69,15 @@ Misc Functions
 
 """
 
-import functools
+from collections.abc import Callable, Sequence
+from typing import Literal, overload
 
 import jax
 import jax.numpy as jnp
-from jax import jit
+from jax.typing import ArrayLike
 
 from . import polyutils as pu
+from ._utils import wrap_jit
 
 __all__ = [
     "chebzero",
@@ -121,8 +123,8 @@ chebtrim = pu.trimcoef
 #
 
 
-@jit
-def _cseries_to_zseries(c):
+@wrap_jit()
+def _cseries_to_zseries(c: jax.Array) -> jax.Array:
     """Convert Chebyshev series to z-series.
 
     Convert a Chebyshev series to the equivalent z-series. The result is
@@ -147,8 +149,8 @@ def _cseries_to_zseries(c):
     return zs + zs[::-1]
 
 
-@jit
-def _zseries_to_cseries(zs):
+@wrap_jit()
+def _zseries_to_cseries(zs: jax.Array) -> jax.Array:
     """Convert z-series to a Chebyshev series.
 
     Convert a z series to the equivalent Chebyshev series. The result is
@@ -173,8 +175,8 @@ def _zseries_to_cseries(zs):
     return c
 
 
-@functools.partial(jit, static_argnames="mode")
-def _zseries_mul(z1, z2, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def _zseries_mul(z1: jax.Array, z2: jax.Array, mode: str = "full") -> jax.Array:
     """Multiply two z-series.
 
     Multiply two z-series to produce a z-series.
@@ -209,8 +211,8 @@ def _zseries_mul(z1, z2, mode="full"):
 #
 
 
-@jit
-def poly2cheb(pol):
+@wrap_jit()
+def poly2cheb(pol: ArrayLike) -> jax.Array:
     """Convert a polynomial to a Chebyshev series.
 
     Convert an array representing the coefficients of a polynomial (relative
@@ -248,8 +250,8 @@ def poly2cheb(pol):
     return res
 
 
-@jit
-def cheb2poly(c):
+@wrap_jit()
+def cheb2poly(c: ArrayLike) -> jax.Array:
     """Convert a Chebyshev series to a polynomial.
 
     Convert an array representing the coefficients of a Chebyshev series,
@@ -312,8 +314,8 @@ chebx = jnp.array([0, 1])
 """Chebyshev coefficients representing the identity x."""
 
 
-@jit
-def chebline(off, scl):
+@wrap_jit()
+def chebline(off: ArrayLike, scl: ArrayLike) -> jax.Array:
     """Chebyshev series whose graph is a straight line.
 
     Parameters
@@ -347,8 +349,8 @@ def chebline(off, scl):
     return jnp.array([off, scl])
 
 
-@jit
-def chebfromroots(roots):
+@wrap_jit()
+def chebfromroots(roots: ArrayLike) -> jax.Array:
     """Generate a Chebyshev series with given roots.
 
     The function returns the coefficients of the polynomial
@@ -402,8 +404,8 @@ def chebfromroots(roots):
     return pu._fromroots(chebline, chebmul, roots)
 
 
-@jit
-def chebadd(c1, c2):
+@wrap_jit()
+def chebadd(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """Add one Chebyshev series to another.
 
     Returns the sum of two Chebyshev series `c1` + `c2`.  The arguments
@@ -444,8 +446,8 @@ def chebadd(c1, c2):
     return pu._add(c1, c2)
 
 
-@jit
-def chebsub(c1, c2):
+@wrap_jit()
+def chebsub(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """Subtract one Chebyshev series from another.
 
     Returns the difference of two Chebyshev series `c1` - `c2`.  The
@@ -488,8 +490,8 @@ def chebsub(c1, c2):
     return pu._sub(c1, c2)
 
 
-@functools.partial(jit, static_argnames="mode")
-def chebmulx(c, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def chebmulx(c: ArrayLike, mode: str = "full") -> jax.Array:
     """Multiply a Chebyshev series by x.
 
     Multiply the polynomial `c` by x, where x is the independent
@@ -531,8 +533,8 @@ def chebmulx(c, mode="full"):
     return prd
 
 
-@functools.partial(jit, static_argnames="mode")
-def chebmul(c1, c2, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def chebmul(c1: ArrayLike, c2: ArrayLike, mode: str = "full") -> jax.Array:
     """Multiply one Chebyshev series by another.
 
     Returns the product of two Chebyshev series `c1` * `c2`.  The arguments
@@ -585,8 +587,8 @@ def chebmul(c1, c2, mode="full"):
     return ret
 
 
-@jit
-def chebdiv(c1, c2):
+@wrap_jit()
+def chebdiv(c1: ArrayLike, c2: ArrayLike) -> tuple[jax.Array, jax.Array]:
     """Divide one Chebyshev series by another.
 
     Returns the quotient-with-remainder of two Chebyshev series
@@ -636,8 +638,8 @@ def chebdiv(c1, c2):
     return pu._div(chebmul, c1, c2)
 
 
-@functools.partial(jit, static_argnames=("pow", "maxpower"))
-def chebpow(c, pow, maxpower=16):
+@wrap_jit(static_argnames=("pow", "maxpower"))
+def chebpow(c: ArrayLike, pow: int, maxpower: int | None = 16) -> jax.Array:
     """Raise a Chebyshev series to a power.
 
     Returns the Chebyshev series `c` raised to the power `pow`. The
@@ -700,8 +702,8 @@ def chebpow(c, pow, maxpower=16):
         return _zseries_to_cseries(prd)
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def chebder(c, m=1, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def chebder(c: ArrayLike, m: int = 1, scl: ArrayLike = 1, axis: int = 0) -> jax.Array:
     """Differentiate a Chebyshev series.
 
     Returns the Chebyshev series coefficients `c` differentiated `m` times
@@ -771,32 +773,34 @@ def chebder(c, m=1, scl=1, axis=0):
     if m >= n:
         c = jnp.zeros_like(c[:1])
     else:
-        # TODO: figure out how to get rid of this python loop
-        for i in range(m):
+        # m is static, so this loop is unrolled at trace time. It cannot be a lax
+        # loop because the number of coefficients changes on each iteration.
+        for _ in range(m):
             n = n - 1
             c *= scl
-            der = jnp.empty((n,) + c.shape[1:], dtype=c.dtype)
-
-            # TODO: can this be vectorized?
-            def body(k, der_c):
-                j = n - k
-                der, c = der_c
-                der = der.at[j - 1].set((2 * j) * c[j])
-                c = c.at[j - 2].add((j * c[j]) / (j - 2))
-                return der, c
-
-            der, c = jax.lax.fori_loop(0, n - 2, body, (der, c))
-            if n > 1:
-                der = der.at[1].set(4 * c[2])
-            der = der.at[0].set(c[1])
-            c = der
+            # T_j' = 2j T_{j-1} + (j/(j-2)) T_{j-2}'. Written in terms of the
+            # rescaled partial sums s_j = j c_j + s_{j+2}, ie a reverse
+            # cumulative sum over coefficients of like parity, the derivative
+            # coefficients are d_{j-1} = 2 s_j, except d_0 = s_1 since T_0
+            # carries no factor of 2. Rescaling by j also avoids the division by
+            # j - 2 that the unscaled recurrence would need.
+            j = jnp.arange(len(c))
+            s = pu._rcumsum((c.T * j).T, 2)[1:]
+            c = (2 * s).at[0].set(s[0])
 
     c = jnp.moveaxis(c, 0, axis)
     return c
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def chebint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def chebint(
+    c: ArrayLike,
+    m: int = 1,
+    k: ArrayLike | Sequence[ArrayLike] = [],
+    lbnd: ArrayLike = 0,
+    scl: ArrayLike = 1,
+    axis: int = 0,
+) -> jax.Array:
     """Integrate a Chebyshev series.
 
     Returns the Chebyshev series coefficients `c` integrated `m` times from
@@ -896,7 +900,8 @@ def chebint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     c = jnp.moveaxis(c, axis, 0)
     k = jnp.array(list(k) + [0] * (m - len(k)), ndmin=1)
 
-    # TODO: figure out how to get rid of this python loop
+    # m is static, so this loop is unrolled at trace time. It cannot be a lax
+    # loop because the number of coefficients changes on each iteration.
     for i in range(m):
         n = len(c)
         c *= scl
@@ -914,8 +919,8 @@ def chebint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     return c
 
 
-@functools.partial(jit, static_argnames=("tensor",))
-def chebval(x, c, tensor=True):
+@wrap_jit(static_argnames=("tensor",))
+def chebval(x: ArrayLike, c: ArrayLike, tensor: bool = True) -> jax.Array:
     """Evaluate a Chebyshev series at points x.
 
     If `c` is of length `n + 1`, this function returns the value:
@@ -999,8 +1004,8 @@ def chebval(x, c, tensor=True):
     return c0 + c1 * x
 
 
-@jit
-def chebval2d(x, y, c):
+@wrap_jit()
+def chebval2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D Chebyshev series at points (x, y).
 
     This function returns the values:
@@ -1043,8 +1048,8 @@ def chebval2d(x, y, c):
     return pu._valnd(chebval, c, x, y)
 
 
-@jit
-def chebgrid2d(x, y, c):
+@wrap_jit()
+def chebgrid2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D Chebyshev series on the Cartesian product of x and y.
 
     This function returns the values:
@@ -1091,8 +1096,8 @@ def chebgrid2d(x, y, c):
     return pu._gridnd(chebval, c, x, y)
 
 
-@jit
-def chebval3d(x, y, z, c):
+@wrap_jit()
+def chebval3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D Chebyshev series at points (x, y, z).
 
     This function returns the values:
@@ -1137,8 +1142,8 @@ def chebval3d(x, y, z, c):
     return pu._valnd(chebval, c, x, y, z)
 
 
-@jit
-def chebgrid3d(x, y, z, c):
+@wrap_jit()
+def chebgrid3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D Chebyshev series on the Cartesian product of x, y, and z.
 
     This function returns the values:
@@ -1188,8 +1193,8 @@ def chebgrid3d(x, y, z, c):
     return pu._gridnd(chebval, c, x, y, z)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def chebvander(x, deg):
+@wrap_jit(static_argnames=("deg",))
+def chebvander(x: ArrayLike, deg: int) -> jax.Array:
     """Pseudo-Vandermonde matrix of given degree.
 
     Returns the pseudo-Vandermonde matrix of degree `deg` and sample points
@@ -1246,8 +1251,8 @@ def chebvander(x, deg):
     return jnp.moveaxis(v, 0, -1)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def chebvander2d(x, y, deg):
+@wrap_jit(static_argnames=("deg",))
+def chebvander2d(x: ArrayLike, y: ArrayLike, deg: Sequence[int]) -> jax.Array:
     r"""Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1295,8 +1300,10 @@ def chebvander2d(x, y, deg):
     return pu._vander_nd_flat((chebvander, chebvander), (x, y), deg)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def chebvander3d(x, y, z, deg):
+@wrap_jit(static_argnames=("deg",))
+def chebvander3d(
+    x: ArrayLike, y: ArrayLike, z: ArrayLike, deg: Sequence[int]
+) -> jax.Array:
     r"""Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1345,8 +1352,49 @@ def chebvander3d(x, y, z, deg):
     return pu._vander_nd_flat((chebvander, chebvander, chebvander), (x, y, z), deg)
 
 
-@functools.partial(jit, static_argnames=("deg", "full"))
-def chebfit(x, y, deg, rcond=None, full=False, w=None):
+@overload
+def chebfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: Literal[False] = False,
+    w: ArrayLike | None = None,
+) -> jax.Array: ...
+
+
+@overload
+def chebfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@overload
+def chebfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    *,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@wrap_jit(static_argnames=("deg", "full"))
+def chebfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: bool = False,
+    w: ArrayLike | None = None,
+) -> jax.Array | tuple[jax.Array, list[jax.Array]]:
     r"""Least squares fit of Chebyshev series to data.
 
     Return the coefficients of a Chebyshev series of degree `deg` that is the
@@ -1451,8 +1499,8 @@ def chebfit(x, y, deg, rcond=None, full=False, w=None):
     return pu._fit(chebvander, x, y, deg, rcond, full, w)
 
 
-@jit
-def chebcompanion(c):
+@wrap_jit()
+def chebcompanion(c: ArrayLike) -> jax.Array:
     """Return the scaled companion matrix of c.
 
     The basis polynomials are scaled so that the companion matrix is
@@ -1491,8 +1539,8 @@ def chebcompanion(c):
     return mat
 
 
-@jit
-def chebroots(c):
+@wrap_jit()
+def chebroots(c: ArrayLike) -> jax.Array:
     r"""Compute the roots of a Chebyshev series.
 
     Return the roots (a.k.a. "zeros") of the polynomial
@@ -1551,7 +1599,9 @@ def chebroots(c):
     return r
 
 
-def chebinterpolate(func, deg, args=()):
+def chebinterpolate(
+    func: Callable[..., ArrayLike], deg: int, args: tuple = ()
+) -> jax.Array:
     """Interpolate a function at the Chebyshev points of the first kind.
 
     Returns the Chebyshev series that interpolates `func` at the Chebyshev
@@ -1613,7 +1663,7 @@ def chebinterpolate(func, deg, args=()):
     return c
 
 
-def chebgauss(deg):
+def chebgauss(deg: int) -> tuple[jax.Array, jax.Array]:
     r"""Gauss-Chebyshev quadrature.
 
     Computes the sample points and weights for Gauss-Chebyshev quadrature.
@@ -1654,8 +1704,8 @@ def chebgauss(deg):
     return x, w
 
 
-@jit
-def chebweight(x):
+@wrap_jit()
+def chebweight(x: ArrayLike) -> jax.Array:
     r"""The weight function of the Chebyshev polynomials.
 
     The weight function is :math:`1/\sqrt{1 - x^2}` and the interval of
@@ -1678,8 +1728,8 @@ def chebweight(x):
     return w
 
 
-@jit
-def chebnorm(n):
+@wrap_jit()
+def chebnorm(n: ArrayLike) -> jax.Array:
     r"""Norm of nth Chebyshev polynomial.
 
     The norm :math:`\gamma_n` is defined such that
@@ -1702,7 +1752,7 @@ def chebnorm(n):
     return jnp.sqrt(jnp.where(n == 0, jnp.pi, jnp.pi / 2))
 
 
-def chebpts1(npts):
+def chebpts1(npts: int) -> jax.Array:
     """Chebyshev points of the first kind.
 
     The Chebyshev points of the first kind are the points ``cos(x)``,
@@ -1733,7 +1783,7 @@ def chebpts1(npts):
     return jnp.sin(x)
 
 
-def chebpts2(npts):
+def chebpts2(npts: int) -> jax.Array:
     """Chebyshev points of the second kind.
 
     The Chebyshev points of the second kind are the points ``cos(x)``,

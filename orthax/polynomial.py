@@ -89,13 +89,15 @@ __all__ = [
 ]
 
 
-import functools
+from collections.abc import Sequence
+from typing import Literal, overload
 
 import jax
 import jax.numpy as jnp
-from jax import jit
+from jax.typing import ArrayLike
 
 from . import polyutils as pu
+from ._utils import wrap_jit
 
 polytrim = pu.trimcoef
 
@@ -112,8 +114,8 @@ polyx = jnp.array([0, 1])
 """Polynomial coefficients representing the identity x."""
 
 
-@jit
-def polyline(off, scl):
+@wrap_jit()
+def polyline(off: ArrayLike, scl: ArrayLike) -> jax.Array:
     """
     Returns an array representing a linear polynomial.
 
@@ -148,8 +150,8 @@ def polyline(off, scl):
     return jnp.array([off, scl])
 
 
-@jit
-def polyfromroots(roots):
+@wrap_jit()
+def polyfromroots(roots: ArrayLike) -> jax.Array:
     """
     Generate a monic polynomial with given roots.
 
@@ -213,8 +215,8 @@ def polyfromroots(roots):
     return pu._fromroots(polyline, polymul, roots)
 
 
-@jit
-def polyadd(c1, c2):
+@wrap_jit()
+def polyadd(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """
     Add one polynomial to another.
 
@@ -250,8 +252,8 @@ def polyadd(c1, c2):
     return pu._add(c1, c2)
 
 
-@jit
-def polysub(c1, c2):
+@wrap_jit()
+def polysub(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """
     Subtract one polynomial from another.
 
@@ -288,8 +290,8 @@ def polysub(c1, c2):
     return pu._sub(c1, c2)
 
 
-@functools.partial(jit, static_argnames="mode")
-def polymulx(c, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def polymulx(c: ArrayLike, mode: str = "full") -> jax.Array:
     """Multiply a polynomial by x.
 
     Multiply the polynomial `c` by x, where x is the independent
@@ -324,8 +326,8 @@ def polymulx(c, mode="full"):
     return prd
 
 
-@functools.partial(jit, static_argnames="mode")
-def polymul(c1, c2, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def polymul(c1: ArrayLike, c2: ArrayLike, mode: str = "full") -> jax.Array:
     """
     Multiply one polynomial by another.
 
@@ -367,8 +369,8 @@ def polymul(c1, c2, mode="full"):
     return ret
 
 
-@jit
-def polydiv(c1, c2):
+@wrap_jit()
+def polydiv(c1: ArrayLike, c2: ArrayLike) -> tuple[jax.Array, jax.Array]:
     """
     Divide one polynomial by another.
 
@@ -405,8 +407,8 @@ def polydiv(c1, c2):
     return pu._div(polymul, c1, c2)
 
 
-@functools.partial(jit, static_argnames=("pow", "maxpower"))
-def polypow(c, pow, maxpower=16):
+@wrap_jit(static_argnames=("pow", "maxpower"))
+def polypow(c: ArrayLike, pow: int, maxpower: int | None = 16) -> jax.Array:
     """Raise a polynomial to a power.
 
     Returns the polynomial `c` raised to the power `pow`. The argument
@@ -443,8 +445,8 @@ def polypow(c, pow, maxpower=16):
     return pu._pow(polymul, c, pow, maxpower)
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def polyder(c, m=1, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def polyder(c: ArrayLike, m: int = 1, scl: ArrayLike = 1, axis: int = 0) -> jax.Array:
     """Differentiate a polynomial.
 
     Returns the polynomial coefficients `c` differentiated `m` times along
@@ -503,24 +505,29 @@ def polyder(c, m=1, scl=1, axis=0):
     if m >= n:
         c = jnp.zeros_like(c[:1])
     else:
-
         D = jnp.arange(n)
 
-        def body(i, c):
+        def body(i: int, c: jax.Array) -> jax.Array:
             c = (D * c.T).T
             c = jnp.roll(c, -1, axis=0) * scl
             c = c.at[-1].set(0)
             return c
 
-        c = jax.lax.fori_loop(0, m, body, c)
-        c = c[:-m]
+        c = jax.lax.fori_loop(0, m, body, c)[:-m]
 
     c = jnp.moveaxis(c, 0, axis)
     return c
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def polyint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def polyint(
+    c: ArrayLike,
+    m: int = 1,
+    k: ArrayLike | Sequence[ArrayLike] = [],
+    lbnd: ArrayLike = 0,
+    scl: ArrayLike = 1,
+    axis: int = 0,
+) -> jax.Array:
     """
     Integrate a polynomial.
 
@@ -634,8 +641,8 @@ def polyint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     return c
 
 
-@functools.partial(jit, static_argnames=("tensor",))
-def polyval(x, c, tensor=True):
+@wrap_jit(static_argnames=("tensor",))
+def polyval(x: ArrayLike, c: ArrayLike, tensor: bool = True) -> jax.Array:
     """
     Evaluate a polynomial at points x.
 
@@ -729,8 +736,8 @@ def polyval(x, c, tensor=True):
     return c0
 
 
-@functools.partial(jit, static_argnames=("tensor",))
-def polyvalfromroots(x, r, tensor=True):
+@wrap_jit(static_argnames=("tensor",))
+def polyvalfromroots(x: ArrayLike, r: ArrayLike, tensor: bool = True) -> jax.Array:
     r"""Evaluate a polynomial specified by its roots at points x.
 
     If `r` is of length `N`, this function returns the value
@@ -811,8 +818,8 @@ def polyvalfromroots(x, r, tensor=True):
     return jnp.prod(x - r, axis=0)
 
 
-@jit
-def polyval2d(x, y, c):
+@wrap_jit()
+def polyval2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D polynomial at points (x, y).
 
     This function returns the value
@@ -856,8 +863,8 @@ def polyval2d(x, y, c):
     return pu._valnd(polyval, c, x, y)
 
 
-@jit
-def polygrid2d(x, y, c):
+@wrap_jit()
+def polygrid2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D polynomial on the Cartesian product of x and y.
 
     This function returns the values:
@@ -904,8 +911,8 @@ def polygrid2d(x, y, c):
     return pu._gridnd(polyval, c, x, y)
 
 
-@jit
-def polyval3d(x, y, z, c):
+@wrap_jit()
+def polyval3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D polynomial at points (x, y, z).
 
     This function returns the values:
@@ -950,8 +957,8 @@ def polyval3d(x, y, z, c):
     return pu._valnd(polyval, c, x, y, z)
 
 
-@jit
-def polygrid3d(x, y, z, c):
+@wrap_jit()
+def polygrid3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D polynomial on the Cartesian product of x, y and z.
 
     This function returns the values:
@@ -1001,8 +1008,8 @@ def polygrid3d(x, y, z, c):
     return pu._gridnd(polyval, c, x, y, z)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def polyvander(x, deg):
+@wrap_jit(static_argnames=("deg",))
+def polyvander(x: ArrayLike, deg: int) -> jax.Array:
     """Vandermonde matrix of given degree.
 
     Returns the Vandermonde matrix of degree `deg` and sample points
@@ -1058,8 +1065,8 @@ def polyvander(x, deg):
     return jnp.moveaxis(v, 0, -1)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def polyvander2d(x, y, deg):
+@wrap_jit(static_argnames=("deg",))
+def polyvander2d(x: ArrayLike, y: ArrayLike, deg: Sequence[int]) -> jax.Array:
     """Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1107,8 +1114,10 @@ def polyvander2d(x, y, deg):
     return pu._vander_nd_flat((polyvander, polyvander), (x, y), deg)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def polyvander3d(x, y, z, deg):
+@wrap_jit(static_argnames=("deg",))
+def polyvander3d(
+    x: ArrayLike, y: ArrayLike, z: ArrayLike, deg: Sequence[int]
+) -> jax.Array:
     """Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1157,8 +1166,49 @@ def polyvander3d(x, y, z, deg):
     return pu._vander_nd_flat((polyvander, polyvander, polyvander), (x, y, z), deg)
 
 
-@functools.partial(jit, static_argnames=("deg", "full"))
-def polyfit(x, y, deg, rcond=None, full=False, w=None):
+@overload
+def polyfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: Literal[False] = False,
+    w: ArrayLike | None = None,
+) -> jax.Array: ...
+
+
+@overload
+def polyfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@overload
+def polyfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    *,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@wrap_jit(static_argnames=("deg", "full"))
+def polyfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: bool = False,
+    w: ArrayLike | None = None,
+) -> jax.Array | tuple[jax.Array, list[jax.Array]]:
     r"""Least-squares fit of a polynomial to data.
 
     Return the coefficients of a polynomial of degree `deg` that is the
@@ -1295,8 +1345,8 @@ def polyfit(x, y, deg, rcond=None, full=False, w=None):
     return pu._fit(polyvander, x, y, deg, rcond, full, w)
 
 
-@jit
-def polycompanion(c):
+@wrap_jit()
+def polycompanion(c: ArrayLike) -> jax.Array:
     """Return the companion matrix of c.
 
     The companion matrix for power series cannot be made symmetric by
@@ -1329,8 +1379,8 @@ def polycompanion(c):
     return mat
 
 
-@jit
-def polyroots(c):
+@wrap_jit()
+def polyroots(c: ArrayLike) -> jax.Array:
     r"""Compute the roots of a polynomial.
 
     Return the roots (a.k.a. "zeros") of the polynomial

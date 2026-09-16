@@ -20,11 +20,17 @@ Functions
 
 import functools
 import operator
+from collections.abc import Callable, Sequence
+from typing import Any, TypeVar, overload
 
 import jax
 import jax.numpy as jnp
 import numpy as np
-from jax import jit
+from jax.typing import ArrayLike
+
+from ._utils import wrap_jit
+
+SeqT = TypeVar("SeqT", jax.Array, Sequence[Any])
 
 __all__ = [
     "as_series",
@@ -36,7 +42,7 @@ __all__ = [
 ]
 
 
-def trimseq(seq):
+def trimseq(seq: SeqT) -> SeqT:
     """Remove small Poly series coefficients.
 
     Parameters
@@ -59,13 +65,26 @@ def trimseq(seq):
     if len(seq) == 0:
         return seq
     else:
+        i = 0
         for i in range(len(seq) - 1, -1, -1):
             if seq[i] != 0:
                 break
         return seq[: i + 1]
 
 
-def as_series(*arrs, trim=False):
+@overload
+def as_series(arr: ArrayLike, /, *, trim: bool = False) -> jax.Array: ...
+
+
+@overload
+def as_series(
+    arr1: ArrayLike, arr2: ArrayLike, /, *arrs: ArrayLike, trim: bool = False
+) -> tuple[jax.Array, ...]: ...
+
+
+def as_series(
+    *arrs: ArrayLike, trim: bool = False
+) -> jax.Array | tuple[jax.Array, ...]:
     """Return arguments as a list of 1-d arrays.
 
     The returned list contains array(s) of dtype double, complex double, or
@@ -92,13 +111,13 @@ def as_series(*arrs, trim=False):
     arrays = tuple(jnp.array(a, ndmin=1) for a in arrs)
     if trim:
         arrays = tuple(trimseq(a) for a in arrays)
-    arrays = jax._src.numpy.util.promote_dtypes_inexact(*arrays)
+    arrays = jax._src.numpy.util.promote_dtypes_inexact(*arrays)  # pyright: ignore
     if len(arrays) == 1:
         return arrays[0]
     return tuple(arrays)
 
 
-def trimcoef(c, tol=0):
+def trimcoef(c: ArrayLike, tol: float = 0) -> jax.Array:
     """
     Remove "small" "trailing" coefficients from a polynomial.
 
@@ -157,8 +176,8 @@ def trimcoef(c, tol=0):
         return c[: ind[-1] + 1].copy()
 
 
-@jit
-def getdomain(x):
+@wrap_jit()
+def getdomain(x: ArrayLike) -> jax.Array:
     """
     Return a domain suitable for given abscissae.
 
@@ -205,8 +224,8 @@ def getdomain(x):
         return jnp.array((x.min(), x.max()))
 
 
-@jit
-def mapparms(old, new):
+@wrap_jit()
+def mapparms(old: ArrayLike, new: ArrayLike) -> tuple[jax.Array, jax.Array]:
     """
     Linear map parameters between domains.
 
@@ -247,6 +266,8 @@ def mapparms(old, new):
     ((1+1j), (1-0j))
 
     """
+    old = jnp.asarray(old)
+    new = jnp.asarray(new)
     oldlen = old[1] - old[0]
     newlen = new[1] - new[0]
     off = (old[1] * new[0] - old[0] * new[1]) / oldlen
@@ -254,8 +275,8 @@ def mapparms(old, new):
     return off, scl
 
 
-@jit
-def mapdomain(x, old, new):
+@wrap_jit()
+def mapdomain(x: ArrayLike, old: ArrayLike, new: ArrayLike) -> jax.Array:
     r"""
     Apply linear map to input points.
 
@@ -323,13 +344,17 @@ def mapdomain(x, old, new):
     return off + scl * x
 
 
-def _nth_slice(i, ndim):
-    sl = [jnp.newaxis] * ndim
+def _nth_slice(i: int, ndim: int) -> tuple[Any, ...]:
+    sl: list[Any] = [jnp.newaxis] * ndim
     sl[i] = slice(None)
     return tuple(sl)
 
 
-def _vander_nd(vander_fs, points, degrees):
+def _vander_nd(
+    vander_fs: Sequence[Callable[[ArrayLike, int], jax.Array]],
+    points: Sequence[ArrayLike],
+    degrees: Sequence[int],
+) -> jax.Array:
     r"""A generalization of the Vandermonde matrix for N dimensions.
 
     The result is built by combining the results of 1d Vandermonde matrices,
@@ -397,7 +422,11 @@ def _vander_nd(vander_fs, points, degrees):
     return functools.reduce(operator.mul, vander_arrays)
 
 
-def _vander_nd_flat(vander_fs, points, degrees):
+def _vander_nd_flat(
+    vander_fs: Sequence[Callable[[ArrayLike, int], jax.Array]],
+    points: Sequence[ArrayLike],
+    degrees: Sequence[int],
+) -> jax.Array:
     """
     Like `_vander_nd`, but flattens the last ``len(degrees)`` axes into a single axis.
 
@@ -407,7 +436,11 @@ def _vander_nd_flat(vander_fs, points, degrees):
     return v.reshape(v.shape[: -len(degrees)] + (-1,))
 
 
-def _fromroots(line_f, mul_f, roots):
+def _fromroots(
+    line_f: Callable[[ArrayLike, ArrayLike], jax.Array],
+    mul_f: Callable[[ArrayLike, ArrayLike], jax.Array],
+    roots: ArrayLike,
+) -> jax.Array:
     """
     Helper function used to implement the ``<type>fromroots`` functions.
 
@@ -458,7 +491,9 @@ def _fromroots(line_f, mul_f, roots):
     return ret[0]
 
 
-def _valnd(val_f, c, *args):
+def _valnd(
+    val_f: Callable[..., jax.Array], c: ArrayLike, *args: ArrayLike
+) -> jax.Array:
     """
     Helper function used to implement the ``<type>val<n>d`` functions.
 
@@ -469,26 +504,28 @@ def _valnd(val_f, c, *args):
     c, args
         See the ``<type>val<n>d`` functions for more detail
     """
-    args = [jnp.asarray(a) for a in args]
-    shape0 = args[0].shape
-    if not all(a.shape == shape0 for a in args[1:]):
-        if len(args) == 3:
+    arrs = [jnp.asarray(a) for a in args]
+    shape0 = arrs[0].shape
+    if not all(a.shape == shape0 for a in arrs[1:]):
+        if len(arrs) == 3:
             raise ValueError("x, y, z are incompatible")
-        elif len(args) == 2:
+        elif len(arrs) == 2:
             raise ValueError("x, y are incompatible")
         else:
             raise ValueError("ordinates are incompatible")
-    it = iter(args)
+    it = iter(arrs)
     x0 = next(it)
 
     # use tensor on only the first
-    c = val_f(x0, c)
+    out = val_f(x0, c)
     for xi in it:
-        c = val_f(xi, c, tensor=False)
-    return c
+        out = val_f(xi, out, tensor=False)
+    return out
 
 
-def _gridnd(val_f, c, *args):
+def _gridnd(
+    val_f: Callable[..., jax.Array], c: ArrayLike, *args: ArrayLike
+) -> jax.Array:
     """
     Helper function used to implement the ``<type>grid<n>d`` functions.
 
@@ -499,12 +536,15 @@ def _gridnd(val_f, c, *args):
     c, args
         See the ``<type>grid<n>d`` functions for more detail
     """
+    out = jnp.asarray(c)
     for xi in args:
-        c = val_f(xi, c)
-    return c
+        out = val_f(xi, out)
+    return out
 
 
-def _div(mul_f, c1, c2):
+def _div(
+    mul_f: Callable[[ArrayLike, ArrayLike], jax.Array], c1: ArrayLike, c2: ArrayLike
+) -> tuple[jax.Array, jax.Array]:
     """
     Helper function used to implement the ``<type>div`` functions.
 
@@ -552,7 +592,7 @@ def _div(mul_f, c1, c2):
         return quo, rem
 
 
-def _add(c1, c2):
+def _add(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """Helper function used to implement the ``<type>add`` functions."""
     c1, c2 = as_series(c1, c2)
     if len(c1) > len(c2):
@@ -562,7 +602,7 @@ def _add(c1, c2):
     return ret
 
 
-def _sub(c1, c2):
+def _sub(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """Helper function used to implement the ``<type>sub`` functions."""
     c1, c2 = as_series(c1, c2)
     if len(c1) > len(c2):
@@ -572,7 +612,42 @@ def _sub(c1, c2):
     return ret
 
 
-def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
+def _rcumsum(c: jax.Array, stride: int = 1) -> jax.Array:
+    """Reverse cumulative sum along axis 0 over entries separated by ``stride``.
+
+    Parameters
+    ----------
+    c : ndarray
+        Array to accumulate.
+    stride : int
+        Spacing between accumulated entries. Must be a positive python int.
+
+    Returns
+    -------
+    out : ndarray
+        Array of the same shape as `c` with ``out[i] = c[i] + out[i + stride]``,
+        ie each entry is the sum of all entries at or after it whose index
+        differs from it by a multiple of `stride`.
+
+    """
+    if stride == 1:
+        return jnp.cumsum(c[::-1], axis=0)[::-1]
+    out = jnp.zeros_like(c)
+    # each residue class mod stride accumulates independently
+    for s in range(stride):
+        out = out.at[s::stride].set(jnp.cumsum(c[s::stride][::-1], axis=0)[::-1])
+    return out
+
+
+def _fit(  # noqa:C901
+    vander_f: Callable[[ArrayLike, int], jax.Array],
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: bool = False,
+    w: ArrayLike | None = None,
+) -> jax.Array | tuple[jax.Array, list[Any]]:
     """
     Helper function used to implement the ``<type>fit`` functions.
 
@@ -585,12 +660,12 @@ def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
     """
     x = jnp.asarray(x)
     y = jnp.asarray(y)
-    deg = np.asarray(deg)
+    degs = np.asarray(deg)
 
     # check arguments.
-    if deg.ndim > 1 or deg.dtype.kind not in "iu" or deg.size == 0:
+    if degs.ndim > 1 or degs.dtype.kind not in "iu" or degs.size == 0:
         raise TypeError("deg must be an int or non-empty 1-D array of int")
-    if deg.min() < 0:
+    if degs.min() < 0:
         raise ValueError("expected deg >= 0")
     if x.ndim != 1:
         raise TypeError("expected 1D vector for x")
@@ -601,13 +676,13 @@ def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
     if len(x) != len(y):
         raise TypeError("expected x and y to have same length")
 
-    if deg.ndim == 0:
-        lmax = int(deg)
+    if degs.ndim == 0:
+        lmax = int(degs)
         van = vander_f(x, lmax)
     else:
-        deg = np.sort(deg)
-        lmax = int(deg[-1])
-        van = vander_f(x, lmax)[:, deg]
+        degs = np.sort(degs)
+        lmax = int(degs[-1])
+        van = vander_f(x, lmax)[:, degs]
 
     # set up the least squares matrices in transposed form
     lhs = van.T
@@ -625,7 +700,7 @@ def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
 
     # set rcond
     if rcond is None:
-        rcond = len(x) * jnp.finfo(x.dtype).eps
+        rcond = float(len(x) * jnp.finfo(x.dtype).eps)
 
     # Determine the norms of the design matrix columns.
     if issubclass(lhs.dtype.type, jnp.complexfloating):
@@ -639,12 +714,12 @@ def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
     c = (c.T / scl).T
 
     # Expand c to include non-fitted coefficients which are set to zero
-    if deg.ndim > 0:
+    if degs.ndim > 0:
         if c.ndim == 2:
             cc = jnp.zeros((lmax + 1, c.shape[1]), dtype=c.dtype)
         else:
             cc = jnp.zeros(lmax + 1, dtype=c.dtype)
-        cc = cc.at[deg].set(c)
+        cc = cc.at[degs].set(c)
         c = cc
 
     if full:
@@ -653,7 +728,9 @@ def _fit(vander_f, x, y, deg, rcond=None, full=False, w=None):  # noqa:C901
         return c
 
 
-def _pow(mul_f, c, pow, maxpower):
+def _pow(
+    mul_f: Callable[..., jax.Array], c: ArrayLike, pow: int, maxpower: int | None
+) -> jax.Array:
     """
     Helper function used to implement the ``<type>pow`` functions.
 
@@ -690,7 +767,9 @@ def _pow(mul_f, c, pow, maxpower):
         return prd
 
 
-def _pad_along_axis(array, pad=(0, 0), axis=0):
+def _pad_along_axis(
+    array: jax.Array, pad: tuple[int, int] = (0, 0), axis: int = 0
+) -> jax.Array:
     """Pad with zeros or truncate a given dimension."""
     array = jnp.moveaxis(array, axis, 0)
 

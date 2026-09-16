@@ -56,12 +56,16 @@ Misc Functions
 """
 
 import functools
+from collections.abc import Sequence
+from typing import Literal, overload
 
 import jax
 import jax.numpy as jnp
-from jax import jit
+from jax.typing import ArrayLike
 
 from . import polyutils as pu
+from ._utils import wrap_jit
+from .recurrence import AbstractRecurrenceRelation
 
 __all__ = [
     "orthadd",
@@ -95,7 +99,7 @@ __all__ = [
 orthtrim = pu.trimcoef
 
 
-def tridiagmv(d, l, u, x):
+def tridiagmv(d: jax.Array, l: jax.Array, u: jax.Array, x: jax.Array) -> jax.Array:
     """Matvec for tridiagonal matrix."""
     a = u * x[1:]
     b = d * x
@@ -103,14 +107,14 @@ def tridiagmv(d, l, u, x):
     return b.at[:-1].add(a).at[1:].add(c)
 
 
-def last_nonzero(x):
+def last_nonzero(x: jax.Array) -> tuple[jax.Array, jax.Array]:
     """Get index and value of last nonzero element of x"""
     i = len(x) - 1 - jnp.nonzero(x[::-1], size=1, fill_value=len(x))[0][0]
     return i, x[i]
 
 
-@jit
-def poly2orth(pol, rec):
+@wrap_jit()
+def poly2orth(pol: ArrayLike, rec: AbstractRecurrenceRelation) -> jax.Array:
     """Convert a polynomial to an orthogonal series.
 
     Convert an array representing the coefficients of a polynomial (relative
@@ -150,8 +154,8 @@ def poly2orth(pol, rec):
     return res
 
 
-@jit
-def orth2poly(c, rec):
+@wrap_jit()
+def orth2poly(c: ArrayLike, rec: AbstractRecurrenceRelation) -> jax.Array:
     """Convert an orthogonal series to a polynomial in standard basis.
 
     Convert an array representing the coefficients of an orthogonal series,
@@ -183,8 +187,10 @@ def orth2poly(c, rec):
     return jnp.linalg.solve(A, c)
 
 
-@jit
-def orthline(off, scl, rec):
+@wrap_jit()
+def orthline(
+    off: ArrayLike, scl: ArrayLike, rec: AbstractRecurrenceRelation
+) -> jax.Array:
     """Orthogonal series whose graph is a straight line.
 
     Parameters
@@ -204,8 +210,8 @@ def orthline(off, scl, rec):
     return poly2orth(jnp.array([off, scl]), rec)
 
 
-@jit
-def orthfromroots(roots, rec):
+@wrap_jit()
+def orthfromroots(roots: ArrayLike, rec: AbstractRecurrenceRelation) -> jax.Array:
     """Generate an orthogonal series with given roots.
 
     The function returns the coefficients of the polynomial
@@ -246,8 +252,8 @@ def orthfromroots(roots, rec):
     )
 
 
-@jit
-def orthadd(c1, c2, rec):
+@wrap_jit()
+def orthadd(c1: ArrayLike, c2: ArrayLike, rec: AbstractRecurrenceRelation) -> jax.Array:
     """Add one orthogonal series to another.
 
     Returns the sum of two orthogonal series `c1` + `c2`.  The arguments
@@ -275,8 +281,8 @@ def orthadd(c1, c2, rec):
     return pu._add(c1, c2)
 
 
-@jit
-def orthsub(c1, c2, rec):
+@wrap_jit()
+def orthsub(c1: ArrayLike, c2: ArrayLike, rec: AbstractRecurrenceRelation) -> jax.Array:
     """Subtract one orthogonal series from another.
 
     Returns the difference of two orthogonal series `c1` - `c2`.  The
@@ -304,8 +310,10 @@ def orthsub(c1, c2, rec):
     return pu._sub(c1, c2)
 
 
-@functools.partial(jit, static_argnames="mode")
-def orthmulx(c, rec, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def orthmulx(
+    c: ArrayLike, rec: AbstractRecurrenceRelation, mode: str = "full"
+) -> jax.Array:
     """Multiply an orthogonal series by x.
 
     Multiply the polynomial `c` by x, where x is the independent
@@ -327,6 +335,7 @@ def orthmulx(c, rec, mode="full"):
     out : ndarray
         Array representing the result of the multiplication.
     """
+    c = jnp.asarray(c)
     n = jnp.arange(len(c) + 1)
     a = rec.a(n)
     b = rec.b(n)
@@ -352,8 +361,10 @@ def orthmulx(c, rec, mode="full"):
     return prd
 
 
-@functools.partial(jit, static_argnames="mode")
-def orthmul(c1, c2, rec, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def orthmul(
+    c1: ArrayLike, c2: ArrayLike, rec: AbstractRecurrenceRelation, mode: str = "full"
+) -> jax.Array:
     """Multiply one orthogonal series by another.
 
     Returns the product of two series `c1` * `c2`.  The arguments
@@ -381,6 +392,8 @@ def orthmul(c1, c2, rec, mode="full"):
     orthadd, orthsub, orthmulx, orthdiv, orthpow
 
     """
+    c1 = jnp.asarray(c1)
+    c2 = jnp.asarray(c2)
     # assume c1 is longer, we iterate over c2 so want that shortest
     if len(c2) > len(c1):
         c1, c2 = c2, c1
@@ -440,8 +453,10 @@ def orthmul(c1, c2, rec, mode="full"):
     return u
 
 
-@jit
-def orthdiv(c1, c2, rec):
+@wrap_jit()
+def orthdiv(
+    c1: ArrayLike, c2: ArrayLike, rec: AbstractRecurrenceRelation
+) -> tuple[jax.Array, jax.Array]:
     """Divide one orthogonal series by another.
 
     Returns the quotient-with-remainder of two orthogonal series
@@ -479,8 +494,10 @@ def orthdiv(c1, c2, rec):
     return pu._div(functools.partial(orthmul, rec=rec), c1, c2)
 
 
-@functools.partial(jit, static_argnames=("pow", "maxpower"))
-def orthpow(c, pow, rec, maxpower=16):
+@wrap_jit(static_argnames=("pow", "maxpower"))
+def orthpow(
+    c: ArrayLike, pow: int, rec: AbstractRecurrenceRelation, maxpower: int | None = 16
+) -> jax.Array:
     """Raise an orthogonal series to a power.
 
     Returns the orthogonal series `c` raised to the power `pow`. The
@@ -513,8 +530,10 @@ def orthpow(c, pow, rec, maxpower=16):
     return pu._pow(functools.partial(orthmul, rec=rec), c, pow, maxpower)
 
 
-@functools.partial(jit, static_argnames=("tensor",))
-def orthval(x, c, rec, tensor=True):
+@wrap_jit(static_argnames=("tensor",))
+def orthval(
+    x: ArrayLike, c: ArrayLike, rec: AbstractRecurrenceRelation, tensor: bool = True
+) -> jax.Array:
     """Evaluate an orthogonal series.
 
     Parameters
@@ -563,8 +582,10 @@ def orthval(x, c, rec, tensor=True):
     return p0 * c[0] * rec.m(0) + p1 * c1 - rec.b(1) * p0 * c2
 
 
-@jit
-def orthval2d(x, y, c, rec):
+@wrap_jit()
+def orthval2d(
+    x: ArrayLike, y: ArrayLike, c: ArrayLike, rec: AbstractRecurrenceRelation
+) -> jax.Array:
     r"""Evaluate a 2-D orthogonal series at points (x, y).
 
     This function returns the values:
@@ -609,8 +630,10 @@ def orthval2d(x, y, c, rec):
     return pu._valnd(functools.partial(orthval, rec=rec), c, x, y)
 
 
-@jit
-def orthgrid2d(x, y, c, rec):
+@wrap_jit()
+def orthgrid2d(
+    x: ArrayLike, y: ArrayLike, c: ArrayLike, rec: AbstractRecurrenceRelation
+) -> jax.Array:
     r"""Evaluate a 2-D orthogonal series on the Cartesian product of x and y.
 
     This function returns the values:
@@ -659,8 +682,14 @@ def orthgrid2d(x, y, c, rec):
     return pu._gridnd(functools.partial(orthval, rec=rec), c, x, y)
 
 
-@jit
-def orthval3d(x, y, z, c, rec):
+@wrap_jit()
+def orthval3d(
+    x: ArrayLike,
+    y: ArrayLike,
+    z: ArrayLike,
+    c: ArrayLike,
+    rec: AbstractRecurrenceRelation,
+) -> jax.Array:
     r"""Evaluate a 3-D orthogonal series at points (x, y, z).
 
     This function returns the values:
@@ -707,8 +736,14 @@ def orthval3d(x, y, z, c, rec):
     return pu._valnd(functools.partial(orthval, rec=rec), c, x, y, z)
 
 
-@jit
-def orthgrid3d(x, y, z, c, rec):
+@wrap_jit()
+def orthgrid3d(
+    x: ArrayLike,
+    y: ArrayLike,
+    z: ArrayLike,
+    c: ArrayLike,
+    rec: AbstractRecurrenceRelation,
+) -> jax.Array:
     r"""Evaluate a 3-D orthogonal series on the Cartesian product of x, y, and z.
 
     This function returns the values:
@@ -760,8 +795,8 @@ def orthgrid3d(x, y, z, c, rec):
     return pu._gridnd(functools.partial(orthval, rec=rec), c, x, y, z)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def orthvander(x, deg, rec):
+@wrap_jit(static_argnames=("deg",))
+def orthvander(x: ArrayLike, deg: int, rec: AbstractRecurrenceRelation) -> jax.Array:
     """Pseudo-Vandermonde matrix of given degree.
 
     Returns the pseudo-Vandermonde matrix of degree `deg` and sample points
@@ -823,8 +858,10 @@ def orthvander(x, deg, rec):
     return jnp.moveaxis(v, 0, -1) * rec.m(jnp.arange(deg + 1))
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def orthvander2d(x, y, deg, rec):
+@wrap_jit(static_argnames=("deg",))
+def orthvander2d(
+    x: ArrayLike, y: ArrayLike, deg: Sequence[int], rec: AbstractRecurrenceRelation
+) -> jax.Array:
     r"""Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -875,8 +912,14 @@ def orthvander2d(x, y, deg, rec):
     return pu._vander_nd_flat((vander, vander), (x, y), deg)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def orthvander3d(x, y, z, deg, rec):
+@wrap_jit(static_argnames=("deg",))
+def orthvander3d(
+    x: ArrayLike,
+    y: ArrayLike,
+    z: ArrayLike,
+    deg: Sequence[int],
+    rec: AbstractRecurrenceRelation,
+) -> jax.Array:
     r"""Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -928,8 +971,53 @@ def orthvander3d(x, y, z, deg, rec):
     return pu._vander_nd_flat((vander, vander, vander), (x, y, z), deg)
 
 
-@functools.partial(jit, static_argnames=("deg", "full"))
-def orthfit(x, y, deg, rec, rcond=None, full=False, w=None):
+@overload
+def orthfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rec: AbstractRecurrenceRelation,
+    rcond: float | None = None,
+    full: Literal[False] = False,
+    w: ArrayLike | None = None,
+) -> jax.Array: ...
+
+
+@overload
+def orthfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rec: AbstractRecurrenceRelation,
+    rcond: float | None,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@overload
+def orthfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rec: AbstractRecurrenceRelation,
+    rcond: float | None = None,
+    *,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@wrap_jit(static_argnames=("deg", "full"))
+def orthfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rec: AbstractRecurrenceRelation,
+    rcond: float | None = None,
+    full: bool = False,
+    w: ArrayLike | None = None,
+) -> jax.Array | tuple[jax.Array, list[jax.Array]]:
     r"""Least squares fit of orthogonal series to data.
 
     Return the coefficients of an orthogonal series of degree `deg` that is the
@@ -1038,8 +1126,8 @@ def orthfit(x, y, deg, rec, rcond=None, full=False, w=None):
     return pu._fit(vander, x, y, deg, rcond, full, w)
 
 
-@jit
-def orthweight(x, rec):
+@wrap_jit()
+def orthweight(x: ArrayLike, rec: AbstractRecurrenceRelation) -> jax.Array:
     r"""Weight function of orthogonal polynomials.
 
     Parameters
@@ -1056,8 +1144,8 @@ def orthweight(x, rec):
     return rec.weight(x)
 
 
-@jit
-def orthnorm(n, rec):
+@wrap_jit()
+def orthnorm(n: ArrayLike, rec: AbstractRecurrenceRelation) -> jax.Array:
     r"""Norm of nth orthogonal polynomial.
 
     The norm :math:`\gamma_n` is defined such that
@@ -1078,8 +1166,10 @@ def orthnorm(n, rec):
     return rec.g(n) * jnp.abs(rec.m(n))
 
 
-@functools.partial(jit, static_argnames=("monic",))
-def polyval(x, n, rec, monic=False):
+@wrap_jit(static_argnames=("monic",))
+def polyval(
+    x: ArrayLike, n: ArrayLike, rec: AbstractRecurrenceRelation, monic: bool = False
+) -> jax.Array:
     """Evaluate the nth order polynomial from the family given by rec
 
     Parameters
@@ -1097,6 +1187,7 @@ def polyval(x, n, rec, monic=False):
         Polynomial evaluated at x
     """
     x = jnp.asarray(x)
+    n = jnp.asarray(n)
 
     p0 = jnp.zeros_like(x)
     p1 = jnp.ones_like(x)
@@ -1117,7 +1208,7 @@ def polyval(x, n, rec, monic=False):
     return out
 
 
-def differentiation_matrix(rec, n):
+def differentiation_matrix(rec: AbstractRecurrenceRelation, n: int) -> jax.Array:
     """Differentiation matrix for series up to degree n
 
     Parameters
@@ -1138,18 +1229,26 @@ def differentiation_matrix(rec, n):
     n += 1
     nn = jnp.arange(n)
     Q = jnp.diag(nn.astype(float))
+    # highest recurrence coefficient index the row update below can reach. Lanes
+    # past it are masked off, so clamping only keeps those lanes finite.
+    kmax = jnp.minimum(nn, max(n - 2, 0))
+    aj = (nn > 0) * a(jnp.maximum(kmax - 1, 0))
+    bj = b(kmax)
 
     def iloop(i, Q):
-        def jloop(j, Q):
-            im1 = jnp.maximum(i - 1, 0)
-            jm1 = jnp.maximum(j - 1, 0)
-            Q = Q.at[i, j].add(((j > 0) * a(jm1) - (i > 0) * a(im1)) * Q[i - 1, j])
-            Q = Q.at[i, j].add((j > 1) * Q[i - 1, j - 1])
-            Q = Q.at[i, j].add(b(j) * Q[i - 1, j + 1])
-            Q = Q.at[i, j].add(-1 * (i > 1) * b(im1) * Q[i - 2, j])
-            return Q
-
-        return jax.lax.fori_loop(0, i, jloop, Q)
+        # Row i depends only on rows i - 1 and i - 2, never on itself, so all of
+        # its columns update independently and the row is done in one shot. The
+        # four terms are applied in the same order as the scalar recurrence and
+        # masked lanes add exactly zero, so the result agrees with it to
+        # round-off.
+        im1 = jnp.maximum(i - 1, 0)
+        q1 = Q[i - 1]
+        mask = nn < i
+        Q = Q.at[i].add(jnp.where(mask, (aj - (i > 0) * a(im1)) * q1, 0.0))
+        Q = Q.at[i].add(jnp.where(mask, (nn > 1) * jnp.roll(q1, 1), 0.0))
+        Q = Q.at[i].add(jnp.where(mask, bj * jnp.roll(q1, -1), 0.0))
+        Q = Q.at[i].add(jnp.where(mask, -1 * (i > 1) * b(im1) * Q[i - 2], 0.0))
+        return Q
 
     Q = jax.lax.fori_loop(0, n, iloop, Q)
     D = jnp.pad(Q[1:, 1:], ((1, 0), (0, 1))).T
@@ -1157,7 +1256,7 @@ def differentiation_matrix(rec, n):
     return D
 
 
-def integration_matrix(rec, n):
+def integration_matrix(rec: AbstractRecurrenceRelation, n: int) -> jax.Array:
     """Integration matrix for series up to degree n
 
     Parameters
@@ -1176,7 +1275,9 @@ def integration_matrix(rec, n):
     return jnp.linalg.pinv(D)
 
 
-def _pad_along_axis(array: jax.Array, pad: tuple = (0, 0), axis: int = 0):
+def _pad_along_axis(
+    array: jax.Array, pad: tuple[int, int] = (0, 0), axis: int = 0
+) -> jax.Array:
     """Pad with zeros or truncate a given dimension."""
     array = jnp.moveaxis(array, axis, 0)
 
@@ -1194,8 +1295,14 @@ def _pad_along_axis(array: jax.Array, pad: tuple = (0, 0), axis: int = 0):
     return jnp.moveaxis(array, 0, axis)
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def orthder(c, rec, m=1, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def orthder(
+    c: ArrayLike,
+    rec: AbstractRecurrenceRelation,
+    m: int = 1,
+    scl: ArrayLike = 1,
+    axis: int = 0,
+) -> jax.Array:
     """Differentiate an orthogonal series.
 
     Returns the orthogonal series coefficients `c` differentiated `m` times
@@ -1248,8 +1355,11 @@ def orthder(c, rec, m=1, scl=1, axis=0):
         c = jnp.zeros_like(c[:1])
     else:
         D = differentiation_matrix(rec, len(c) - 1)
-        # TODO: figure out how to get rid of this python loop
-        for i in range(m):
+        # m is static, so this loop is unrolled at trace time. Applying D m times
+        # costs m matrix-vector products, which is cheaper than forming D**m
+        # whenever m is less than the number of coefficients, as guaranteed by
+        # the branch above.
+        for _ in range(m):
             c = D @ c * scl
 
     c = c[:-m]
@@ -1257,8 +1367,16 @@ def orthder(c, rec, m=1, scl=1, axis=0):
     return c
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def orthint(c, rec, m=1, k=[], lbnd=0, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def orthint(
+    c: ArrayLike,
+    rec: AbstractRecurrenceRelation,
+    m: int = 1,
+    k: ArrayLike | Sequence[ArrayLike] = [],
+    lbnd: ArrayLike = 0,
+    scl: ArrayLike = 1,
+    axis: int = 0,
+) -> jax.Array:
     """Integrate an orthogonal series.
 
     Returns the orthogonal series coefficients `c` integrated `m` times from
@@ -1341,7 +1459,9 @@ def orthint(c, rec, m=1, k=[], lbnd=0, scl=1, axis=0):
 
     I = integration_matrix(rec, len(c) + m - 1)
     c = _pad_along_axis(c, (0, m), axis=0)
-    # TODO: figure out how to get rid of this python loop
+    # m is static, so this loop is unrolled at trace time. The integrations cannot
+    # be combined into a single application of I**m because each constant of
+    # integration is determined by the coefficients produced by the previous one.
     for i in range(m):
         c *= scl
         c = I @ c
@@ -1350,7 +1470,7 @@ def orthint(c, rec, m=1, k=[], lbnd=0, scl=1, axis=0):
     return c
 
 
-def jacobi_matrix(rec, n):
+def jacobi_matrix(rec: AbstractRecurrenceRelation, n: int) -> jax.Array:
     """Return the Jacobi matrix for a given set of orthogonal polynomials.
 
 
@@ -1374,7 +1494,12 @@ def jacobi_matrix(rec, n):
     )
 
 
-def orthgauss(deg, rec, x0=None, x1=None):
+def orthgauss(
+    deg: int,
+    rec: AbstractRecurrenceRelation,
+    x0: ArrayLike | None = None,
+    x1: ArrayLike | None = None,
+) -> tuple[jax.Array, jax.Array]:
     """Compute Gaussian quadrature nodes and weights for given orthogonal polynomials.
 
     Can optionally compute Gauss-Radau or Gauss-Lobatto points if x0 and/or x1 are
@@ -1434,8 +1559,8 @@ def orthgauss(deg, rec, x0=None, x1=None):
     return x, w
 
 
-@jit
-def orthcompanion(c, rec):
+@wrap_jit()
+def orthcompanion(c: ArrayLike, rec: AbstractRecurrenceRelation) -> jax.Array:
     """Return the companion matrix of c.
 
     Parameters
@@ -1477,8 +1602,8 @@ def orthcompanion(c, rec):
     return A.at[-1, :].add(-c[:-1] / alpha[-1])
 
 
-@jit
-def orthroots(c, rec):
+@wrap_jit()
+def orthroots(c: ArrayLike, rec: AbstractRecurrenceRelation) -> jax.Array:
     r"""Compute the roots of an orthogonal series.
 
     Return the roots (a.k.a. "zeros") of the polynomial

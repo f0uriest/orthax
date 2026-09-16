@@ -58,7 +58,7 @@ class TestArithmetic:
                 tgt = np.zeros(max(i, j) + 1)
                 tgt[i] += 1
                 tgt[j] += 1
-                res = poly.polyadd([0] * i + [1], [0] * j + [1])
+                res = poly.polyadd(np.array([0] * i + [1]), np.array([0] * j + [1]))
                 assert_array_equal(trim(res), trim(tgt), err_msg=msg)
 
     def test_polysub(self):
@@ -68,16 +68,16 @@ class TestArithmetic:
                 tgt = np.zeros(max(i, j) + 1)
                 tgt[i] += 1
                 tgt[j] -= 1
-                res = poly.polysub([0] * i + [1], [0] * j + [1])
+                res = poly.polysub(np.array([0] * i + [1]), np.array([0] * j + [1]))
                 assert_array_equal(trim(res), trim(tgt), err_msg=msg)
 
     def test_polymulx(self):
-        assert_array_equal(poly.polymulx([0]), [0, 0])
-        assert_array_equal(poly.polymulx([1]), [0, 1])
+        assert_array_equal(poly.polymulx(np.array([0])), [0, 0])
+        assert_array_equal(poly.polymulx(np.array([1])), [0, 1])
         for i in range(1, 5):
             ser = [0] * i + [1]
             tgt = [0] * (i + 1) + [1]
-            assert_array_equal(poly.polymulx(ser), tgt)
+            assert_array_equal(poly.polymulx(np.array(ser)), tgt)
 
     def test_polymul(self):
         for i in range(5):
@@ -85,16 +85,16 @@ class TestArithmetic:
                 msg = f"At i={i}, j={j}"
                 tgt = np.zeros(i + j + 1)
                 tgt[i + j] += 1
-                res = poly.polymul([0] * i + [1], [0] * j + [1])
+                res = poly.polymul(np.array([0] * i + [1]), np.array([0] * j + [1]))
                 assert_array_equal(trim(res), trim(tgt), err_msg=msg)
 
     def test_polydiv(self):
 
         # check scalar division
-        quo, rem = poly.polydiv([2], [2])
+        quo, rem = poly.polydiv(np.array([2]), np.array([2]))
         assert_array_equal(quo, [1])
         assert_array_equal(rem, [0])
-        quo, rem = poly.polydiv([2, 2], [2])
+        quo, rem = poly.polydiv(np.array([2, 2]), np.array([2]))
         assert_array_equal(quo, (1, 1))
         assert_array_equal(rem, [0])
 
@@ -104,9 +104,9 @@ class TestArithmetic:
                 msg = f"At i={i}, j={j}"
                 ci = [0.0] * i + [1.0, 2.0]
                 cj = [0.0] * j + [1.0, 2.0]
-                tgt = poly.polyadd(ci, cj)
-                quo, rem = poly.polydiv(tgt, ci)
-                res = poly.polyadd(poly.polymul(quo, ci), rem)
+                tgt = poly.polyadd(np.array(ci), np.array(cj))
+                quo, rem = poly.polydiv(tgt, np.array(ci))
+                res = poly.polyadd(poly.polymul(quo, np.array(ci)), rem)
                 assert_array_equal(trim(res), trim(tgt), err_msg=msg)
 
     def test_polypow(self):
@@ -127,49 +127,57 @@ class TestEvaluation:
 
     # some random values in [-1, 1)
     x = np.random.random((3, 5)) * 2 - 1
-    y = poly.polyval(x, [1.0, 2.0, 3.0])
+    y = poly.polyval(x, np.array([1.0, 2.0, 3.0]))
 
     def test_polyval(self):
         # check empty input
-        assert_equal(poly.polyval([], [1]).size, 0)
+        assert_equal(poly.polyval(np.array([]), np.array([1])).size, 0)
 
         # check normal input)
         x = np.linspace(-1, 1)
         y = [x**i for i in range(5)]
         for i in range(5):
             tgt = y[i]
-            res = poly.polyval(x, [0] * i + [1])
+            res = poly.polyval(x, np.array([0] * i + [1]))
             assert_array_almost_equal(res, tgt)
         tgt = x * (x**2 - 1)
-        res = poly.polyval(x, [0, -1, 0, 1])
+        res = poly.polyval(x, np.array([0, -1, 0, 1]))
         assert_array_almost_equal(res, tgt)
 
         # check that shape is preserved
         for i in range(3):
             dims = [2] * i
             x = np.zeros(dims)
-            assert_equal(poly.polyval(x, [1]).shape, dims)
-            assert_equal(poly.polyval(x, [1, 0]).shape, dims)
-            assert_equal(poly.polyval(x, [1, 0, 0]).shape, dims)
+            assert_equal(poly.polyval(x, np.array([1])).shape, dims)
+            assert_equal(poly.polyval(x, np.array([1, 0])).shape, dims)
+            assert_equal(poly.polyval(x, np.array([1, 0, 0])).shape, dims)
 
         # check masked arrays are processed correctly
         mask = [False, True, False]
         mx = np.ma.array([1, 2, 3], mask=mask)
         res = np.polyval([7, 5, 3], mx)
-        assert_array_equal(res.mask, mask)
+        assert_array_equal(res.mask, mask)  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_polyvalfromroots(self):
         # check exception for broadcasting x values over root array with
         # too few dimensions
-        assert_raises(ValueError, poly.polyvalfromroots, [1], [1], tensor=False)
+        assert_raises(
+            ValueError,
+            poly.polyvalfromroots,
+            np.array([1]),
+            np.array([1]),
+            tensor=False,
+        )
 
         # check empty input
-        assert_equal(poly.polyvalfromroots([], [1]).size, 0)
-        assert_(poly.polyvalfromroots([], [1]).shape == (0,))
+        assert_equal(poly.polyvalfromroots(np.array([]), np.array([1])).size, 0)
+        assert_(poly.polyvalfromroots(np.array([]), np.array([1])).shape == (0,))
 
         # check empty input + multidimensional roots
-        assert_equal(poly.polyvalfromroots([], [[1] * 5]).size, 0)
-        assert_(poly.polyvalfromroots([], [[1] * 5]).shape == (5, 0))
+        assert_equal(poly.polyvalfromroots(np.array([]), np.array([[1] * 5])).size, 0)
+        assert_(
+            poly.polyvalfromroots(np.array([]), np.array([[1] * 5])).shape == (5, 0)
+        )
 
         # check scalar input
         assert_array_equal(poly.polyvalfromroots(1, 1), 0)
@@ -180,25 +188,27 @@ class TestEvaluation:
         y = [x**i for i in range(5)]
         for i in range(1, 5):
             tgt = y[i]
-            res = poly.polyvalfromroots(x, [0] * i)
+            res = poly.polyvalfromroots(x, np.array([0] * i))
             assert_array_almost_equal(res, tgt)
         tgt = x * (x - 1) * (x + 1)
-        res = poly.polyvalfromroots(x, [-1, 0, 1])
+        res = poly.polyvalfromroots(x, np.array([-1, 0, 1]))
         assert_array_almost_equal(res, tgt)
 
         # check that shape is preserved
         for i in range(3):
             dims = [2] * i
             x = np.zeros(dims)
-            assert_equal(poly.polyvalfromroots(x, [1]).shape, dims)
-            assert_equal(poly.polyvalfromroots(x, [1, 0]).shape, dims)
-            assert_equal(poly.polyvalfromroots(x, [1, 0, 0]).shape, dims)
+            assert_equal(poly.polyvalfromroots(x, np.array([1])).shape, dims)
+            assert_equal(poly.polyvalfromroots(x, np.array([1, 0])).shape, dims)
+            assert_equal(poly.polyvalfromroots(x, np.array([1, 0, 0])).shape, dims)
 
         # check compatibility with factorization
         ptest = [15, 2, -16, -2, 1]
-        r = poly.polyroots(ptest)
+        r = poly.polyroots(np.array(ptest))
         x = np.linspace(-1, 1)
-        assert_array_almost_equal(poly.polyval(x, ptest), poly.polyvalfromroots(x, r))
+        assert_array_almost_equal(
+            poly.polyval(x, np.array(ptest)), poly.polyvalfromroots(x, r)
+        )
 
         # check multidimensional arrays of roots and values
         # check tensor=False
@@ -290,17 +300,17 @@ class TestEvaluation:
 class TestIntegral:
     def test_polyint(self):  # noqa:C901
         # check exceptions
-        assert_raises(TypeError, poly.polyint, [0], 0.5)
-        assert_raises(ValueError, poly.polyint, [0], -1)
-        assert_raises(ValueError, poly.polyint, [0], 1, [0, 0])
-        assert_raises(ValueError, poly.polyint, [0], lbnd=[0])
-        assert_raises(ValueError, poly.polyint, [0], scl=[0])
-        assert_raises(TypeError, poly.polyint, [0], axis=0.5)
+        assert_raises(TypeError, poly.polyint, np.array([0]), 0.5)  # pyright: ignore[reportArgumentType]
+        assert_raises(ValueError, poly.polyint, np.array([0]), -1)
+        assert_raises(ValueError, poly.polyint, np.array([0]), 1, [0, 0])
+        assert_raises(ValueError, poly.polyint, np.array([0]), lbnd=np.array([0]))
+        assert_raises(ValueError, poly.polyint, np.array([0]), scl=np.array([0]))
+        assert_raises(TypeError, poly.polyint, np.array([0]), axis=0.5)  # pyright: ignore[reportArgumentType]
 
         # test integration of zero polynomial
         for i in range(2, 5):
             k = [0] * (i - 2) + [1]
-            res = poly.polyint([0], m=i, k=k)
+            res = poly.polyint(np.array([0]), m=i, k=k)
             assert_array_almost_equal(trim(res), [0, 1])
 
         # check single integration with integration constant
@@ -308,14 +318,14 @@ class TestIntegral:
             scl = i + 1
             pol = [0] * i + [1]
             tgt = [i] + [0] * i + [1 / scl]
-            res = poly.polyint(pol, m=1, k=[i])
+            res = poly.polyint(np.array(pol), m=1, k=[i])
             assert_array_almost_equal(trim(res), trim(tgt))
 
         # check single integration with integration constant and lbnd
         for i in range(5):
             scl = i + 1
             pol = [0] * i + [1]
-            res = poly.polyint(pol, m=1, k=[i], lbnd=-1)
+            res = poly.polyint(np.array(pol), m=1, k=[i], lbnd=-1)
             assert_array_almost_equal(poly.polyval(-1, res), i)
 
         # check single integration with integration constant and scaling
@@ -323,7 +333,7 @@ class TestIntegral:
             scl = i + 1
             pol = [0] * i + [1]
             tgt = [i] + [0] * i + [2 / scl]
-            res = poly.polyint(pol, m=1, k=[i], scl=2)
+            res = poly.polyint(np.array(pol), m=1, k=[i], scl=2)
             assert_array_almost_equal(trim(res), trim(tgt))
 
         # check multiple integrations with default k
@@ -332,8 +342,8 @@ class TestIntegral:
                 pol = [0] * i + [1]
                 tgt = pol[:]
                 for k in range(j):
-                    tgt = poly.polyint(tgt, m=1)
-                res = poly.polyint(pol, m=j)
+                    tgt = poly.polyint(np.array(tgt), m=1)
+                res = poly.polyint(np.array(pol), m=j)
                 assert_array_almost_equal(trim(res), trim(tgt))
 
         # check multiple integrations with defined k
@@ -342,8 +352,8 @@ class TestIntegral:
                 pol = [0] * i + [1]
                 tgt = pol[:]
                 for k in range(j):
-                    tgt = poly.polyint(tgt, m=1, k=[k])
-                res = poly.polyint(pol, m=j, k=list(range(j)))
+                    tgt = poly.polyint(np.array(tgt), m=1, k=[k])
+                res = poly.polyint(np.array(pol), m=j, k=list(range(j)))
                 assert_array_almost_equal(trim(res), trim(tgt))
 
         # check multiple integrations with lbnd
@@ -352,8 +362,8 @@ class TestIntegral:
                 pol = [0] * i + [1]
                 tgt = pol[:]
                 for k in range(j):
-                    tgt = poly.polyint(tgt, m=1, k=[k], lbnd=-1)
-                res = poly.polyint(pol, m=j, k=list(range(j)), lbnd=-1)
+                    tgt = poly.polyint(np.array(tgt), m=1, k=[k], lbnd=-1)
+                res = poly.polyint(np.array(pol), m=j, k=list(range(j)), lbnd=-1)
                 assert_array_almost_equal(trim(res), trim(tgt))
 
         # check multiple integrations with scaling
@@ -362,8 +372,8 @@ class TestIntegral:
                 pol = [0] * i + [1]
                 tgt = pol[:]
                 for k in range(j):
-                    tgt = poly.polyint(tgt, m=1, k=[k], scl=2)
-                res = poly.polyint(pol, m=j, k=list(range(j)), scl=2)
+                    tgt = poly.polyint(np.array(tgt), m=1, k=[k], scl=2)
+                res = poly.polyint(np.array(pol), m=j, k=list(range(j)), scl=2)
                 assert_array_almost_equal(trim(res), trim(tgt))
 
     def test_polyint_axis(self):
@@ -386,26 +396,28 @@ class TestIntegral:
 class TestDerivative:
     def test_polyder(self):
         # check exceptions
-        assert_raises(TypeError, poly.polyder, [0], 0.5)
+        assert_raises(TypeError, poly.polyder, np.array([0]), 0.5)  # pyright: ignore[reportArgumentType]
 
         # check that zeroth derivative does nothing
         for i in range(5):
             tgt = [0] * i + [1]
-            res = poly.polyder(tgt, m=0)
+            res = poly.polyder(np.array(tgt), m=0)
             assert_array_equal(trim(res), trim(tgt))
 
         # check that derivation is the inverse of integration
         for i in range(5):
             for j in range(2, 5):
                 tgt = [0] * i + [1]
-                res = poly.polyder(poly.polyint(tgt, m=j), m=j)
+                res = poly.polyder(poly.polyint(np.array(tgt), m=j), m=j)
                 assert_array_almost_equal(trim(res), trim(tgt))
 
         # check derivation with scaling
         for i in range(5):
             for j in range(2, 5):
                 tgt = [0] * i + [1]
-                res = poly.polyder(poly.polyint(tgt, m=j, scl=2), m=j, scl=0.5)
+                res = poly.polyder(
+                    poly.polyint(np.array(tgt), m=j, scl=2), m=j, scl=0.5
+                )
                 assert_array_almost_equal(trim(res), trim(tgt))
 
     def test_polyder_axis(self):
@@ -432,7 +444,7 @@ class TestVander:
         assert_(v.shape == (3, 4))
         for i in range(4):
             coef = [0] * i + [1]
-            assert_array_almost_equal(v[..., i], poly.polyval(x, coef))
+            assert_array_almost_equal(v[..., i], poly.polyval(x, np.array(coef)))
 
         # check for 2d x
         x = np.array([[1, 2], [3, 4], [5, 6]])
@@ -440,7 +452,7 @@ class TestVander:
         assert_(v.shape == (3, 2, 4))
         for i in range(4):
             coef = [0] * i + [1]
-            assert_array_almost_equal(v[..., i], poly.polyval(x, coef))
+            assert_array_almost_equal(v[..., i], poly.polyval(x, np.array(coef)))
 
     def test_polyvander2d(self):
         # also tests polyval2d for non-square coefficient array
@@ -452,7 +464,7 @@ class TestVander:
         assert_array_almost_equal(res, tgt)
 
         # check shape
-        van = poly.polyvander2d([x1], [x2], (1, 2))
+        van = poly.polyvander2d(np.array([x1]), np.array([x2]), (1, 2))
         assert_(van.shape == (1, 5, 6))
 
     def test_polyvander3d(self):
@@ -465,7 +477,9 @@ class TestVander:
         assert_array_almost_equal(res, tgt)
 
         # check shape
-        van = poly.polyvander3d([x1], [x2], [x3], (1, 2, 3))
+        van = poly.polyvander3d(
+            np.array([x1]), np.array([x2]), np.array([x3]), (1, 2, 3)
+        )
         assert_(van.shape == (1, 5, 24))
 
     def test_polyvandernegdeg(self):
@@ -475,21 +489,21 @@ class TestVander:
 
 class TestCompanion:
     def test_raises(self):
-        assert_raises(ValueError, poly.polycompanion, [])
-        assert_raises(ValueError, poly.polycompanion, [1])
+        assert_raises(ValueError, poly.polycompanion, np.array([]))
+        assert_raises(ValueError, poly.polycompanion, np.array([1]))
 
     def test_dimensions(self):
         for i in range(1, 5):
             coef = [0] * i + [1]
-            assert_(poly.polycompanion(coef).shape == (i, i))
+            assert_(poly.polycompanion(np.array(coef)).shape == (i, i))
 
     def test_linear_root(self):
-        assert_(poly.polycompanion([1, 2])[0, 0] == -0.5)
+        assert_(poly.polycompanion(np.array([1, 2]))[0, 0] == -0.5)
 
 
 class TestMisc:
     def test_polyfromroots(self):
-        res = poly.polyfromroots([])
+        res = poly.polyfromroots(np.array([]))
         assert_array_almost_equal(trim(res), [1])
         for i in range(1, 5):
             roots = np.cos(np.linspace(-np.pi, 0, 2 * i + 1)[1::2])
@@ -498,8 +512,8 @@ class TestMisc:
             assert_array_almost_equal(trim(res), trim(tgt))
 
     def test_polyroots(self):
-        assert_array_almost_equal(poly.polyroots([1]), [])
-        assert_array_almost_equal(poly.polyroots([1, 2]), [-0.5])
+        assert_array_almost_equal(poly.polyroots(np.array([1])), [])
+        assert_array_almost_equal(poly.polyroots(np.array([1, 2])), [-0.5])
         for i in range(2, 5):
             tgt = np.linspace(-1, 1, i)
             res = poly.polyroots(poly.polyfromroots(tgt))
@@ -513,17 +527,23 @@ class TestMisc:
             return x**4 + x**2 + 1
 
         # Test exceptions
-        assert_raises(ValueError, poly.polyfit, [1], [1], -1)
-        assert_raises(TypeError, poly.polyfit, [[1]], [1], 0)
-        assert_raises(TypeError, poly.polyfit, [], [1], 0)
-        assert_raises(TypeError, poly.polyfit, [1], [[[1]]], 0)
-        assert_raises(TypeError, poly.polyfit, [1, 2], [1], 0)
-        assert_raises(TypeError, poly.polyfit, [1], [1, 2], 0)
-        assert_raises(TypeError, poly.polyfit, [1], [1], 0, w=[[1]])
-        assert_raises(TypeError, poly.polyfit, [1], [1], 0, w=[1, 1])
-        assert_raises(ValueError, poly.polyfit, [1], [1], (-1,))
-        assert_raises(ValueError, poly.polyfit, [1], [1], (2, -1, 6))
-        assert_raises(TypeError, poly.polyfit, [1], [1], ())
+        assert_raises(ValueError, poly.polyfit, np.array([1]), np.array([1]), -1)
+        assert_raises(TypeError, poly.polyfit, np.array([[1]]), np.array([1]), 0)
+        assert_raises(TypeError, poly.polyfit, np.array([]), np.array([1]), 0)
+        assert_raises(TypeError, poly.polyfit, np.array([1]), np.array([[[1]]]), 0)
+        assert_raises(TypeError, poly.polyfit, np.array([1, 2]), np.array([1]), 0)
+        assert_raises(TypeError, poly.polyfit, np.array([1]), np.array([1, 2]), 0)
+        assert_raises(
+            TypeError, poly.polyfit, np.array([1]), np.array([1]), 0, w=np.array([[1]])
+        )
+        assert_raises(
+            TypeError, poly.polyfit, np.array([1]), np.array([1]), 0, w=np.array([1, 1])
+        )
+        assert_raises(ValueError, poly.polyfit, np.array([1]), np.array([1]), (-1,))
+        assert_raises(
+            ValueError, poly.polyfit, np.array([1]), np.array([1]), (2, -1, 6)
+        )
+        assert_raises(TypeError, poly.polyfit, np.array([1]), np.array([1]), ())
 
         # Test fit
         x = np.linspace(0, 2)
@@ -564,8 +584,10 @@ class TestMisc:
         # test scaling with complex values x points whose square
         # is zero when summed.
         x = [1, 1j, -1, -1j]
-        assert_array_almost_equal(poly.polyfit(x, x, 1), [0, 1])
-        assert_array_almost_equal(poly.polyfit(x, x, (0, 1)), [0, 1])
+        assert_array_almost_equal(poly.polyfit(np.array(x), np.array(x), 1), [0, 1])
+        assert_array_almost_equal(
+            poly.polyfit(np.array(x), np.array(x), (0, 1)), [0, 1]
+        )
         # test fitting only even polynomials
         x = np.linspace(-1, 1)
         y = f2(x)
@@ -579,12 +601,12 @@ class TestMisc:
         coef = [2, -1, 1, 0]
 
         # Test exceptions
-        assert_raises(ValueError, poly.polytrim, coef, -1)
+        assert_raises(ValueError, poly.polytrim, np.array(coef), -1)
 
         # Test results
-        assert_array_equal(poly.polytrim(coef), coef[:-1])
-        assert_array_equal(poly.polytrim(coef, 1), coef[:-3])
-        assert_array_equal(poly.polytrim(coef, 2), [0])
+        assert_array_equal(poly.polytrim(np.array(coef)), coef[:-1])
+        assert_array_equal(poly.polytrim(np.array(coef), 1), coef[:-3])
+        assert_array_equal(poly.polytrim(np.array(coef), 2), [0])
 
     def test_polyline(self):
         assert_array_equal(poly.polyline(3, 4), [3, 4])

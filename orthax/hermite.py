@@ -62,13 +62,15 @@ Misc Functions
 
 """
 
-import functools
+from collections.abc import Sequence
+from typing import Literal, overload
 
 import jax
 import jax.numpy as jnp
-from jax import jit
+from jax.typing import ArrayLike
 
 from . import polyutils as pu
+from ._utils import wrap_jit
 
 __all__ = [
     "hermzero",
@@ -106,8 +108,8 @@ __all__ = [
 hermtrim = pu.trimcoef
 
 
-@jit
-def poly2herm(pol):
+@wrap_jit()
+def poly2herm(pol: ArrayLike) -> jax.Array:
     """Convert a polynomial to a Hermite series.
 
     Convert an array representing the coefficients of a polynomial (relative
@@ -150,8 +152,8 @@ def poly2herm(pol):
     return res
 
 
-@jit
-def herm2poly(c):
+@wrap_jit()
+def herm2poly(c: ArrayLike) -> jax.Array:
     """Convert a Hermite series to a polynomial.
 
     Convert an array representing the coefficients of a Hermite series,
@@ -228,8 +230,8 @@ hermx = jnp.array([0, 1 / 2])
 """Hermite coefficients representing the identity x."""
 
 
-@jit
-def hermline(off, scl):
+@wrap_jit()
+def hermline(off: ArrayLike, scl: ArrayLike) -> jax.Array:
     """Hermite series whose graph is a straight line.
 
     Parameters
@@ -263,8 +265,8 @@ def hermline(off, scl):
     return jnp.array([off, scl / 2])
 
 
-@jit
-def hermfromroots(roots):
+@wrap_jit()
+def hermfromroots(roots: ArrayLike) -> jax.Array:
     """
     Generate a Hermite series with given roots.
 
@@ -320,8 +322,8 @@ def hermfromroots(roots):
     return pu._fromroots(hermline, hermmul, roots)
 
 
-@jit
-def hermadd(c1, c2):
+@wrap_jit()
+def hermadd(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """
     Add one Hermite series to another.
 
@@ -361,8 +363,8 @@ def hermadd(c1, c2):
     return pu._add(c1, c2)
 
 
-@jit
-def hermsub(c1, c2):
+@wrap_jit()
+def hermsub(c1: ArrayLike, c2: ArrayLike) -> jax.Array:
     """
     Subtract one Hermite series from another.
 
@@ -402,8 +404,8 @@ def hermsub(c1, c2):
     return pu._sub(c1, c2)
 
 
-@functools.partial(jit, static_argnames="mode")
-def hermmulx(c, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def hermmulx(c: ArrayLike, mode: str = "full") -> jax.Array:
     """Multiply a Hermite series by x.
 
     Multiply the Hermite series `c` by x, where x is the independent
@@ -459,8 +461,8 @@ def hermmulx(c, mode="full"):
     return prd
 
 
-@functools.partial(jit, static_argnames="mode")
-def hermmul(c1, c2, mode="full"):
+@wrap_jit(static_argnames=("mode",))
+def hermmul(c1: ArrayLike, c2: ArrayLike, mode: str = "full") -> jax.Array:
     """
     Multiply one Hermite series by another.
 
@@ -537,8 +539,8 @@ def hermmul(c1, c2, mode="full"):
     return ret
 
 
-@jit
-def hermdiv(c1, c2):
+@wrap_jit()
+def hermdiv(c1: ArrayLike, c2: ArrayLike) -> tuple[jax.Array, jax.Array]:
     """
     Divide one Hermite series by another.
 
@@ -586,8 +588,8 @@ def hermdiv(c1, c2):
     return pu._div(hermmul, c1, c2)
 
 
-@functools.partial(jit, static_argnames=("pow", "maxpower"))
-def hermpow(c, pow, maxpower=16):
+@wrap_jit(static_argnames=("pow", "maxpower"))
+def hermpow(c: ArrayLike, pow: int, maxpower: int | None = 16) -> jax.Array:
     """Raise a Hermite series to a power.
 
     Returns the Hermite series `c` raised to the power `pow`. The
@@ -624,8 +626,8 @@ def hermpow(c, pow, maxpower=16):
     return pu._pow(hermmul, c, pow, maxpower)
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def hermder(c, m=1, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def hermder(c: ArrayLike, m: int = 1, scl: ArrayLike = 1, axis: int = 0) -> jax.Array:
     """
     Differentiate a Hermite series.
 
@@ -691,8 +693,9 @@ def hermder(c, m=1, scl=1, axis=0):
     if m >= n:
         c = jnp.zeros_like(c[:1])
     else:
-        # TODO: figure out how to get rid of this python loop
-        for i in range(m):
+        # m is static, so this loop is unrolled at trace time. It cannot be a lax
+        # loop because the number of coefficients changes on each iteration.
+        for _ in range(m):
             n = n - 1
             c *= scl
             der = jnp.empty((n,) + c.shape[1:], dtype=c.dtype)
@@ -703,8 +706,15 @@ def hermder(c, m=1, scl=1, axis=0):
     return c
 
 
-@functools.partial(jit, static_argnames=("m", "axis"))
-def hermint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
+@wrap_jit(static_argnames=("m", "axis"))
+def hermint(
+    c: ArrayLike,
+    m: int = 1,
+    k: ArrayLike | Sequence[ArrayLike] = [],
+    lbnd: ArrayLike = 0,
+    scl: ArrayLike = 1,
+    axis: int = 0,
+) -> jax.Array:
     """
     Integrate a Hermite series.
 
@@ -803,7 +813,8 @@ def hermint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     c = jnp.moveaxis(c, axis, 0)
     k = jnp.array(list(k) + [0] * (m - len(k)), ndmin=1)
 
-    # TODO: figure out how to get rid of this python loop
+    # m is static, so this loop is unrolled at trace time. It cannot be a lax
+    # loop because the number of coefficients changes on each iteration.
     for i in range(m):
         n = len(c)
         c *= scl
@@ -818,8 +829,8 @@ def hermint(c, m=1, k=[], lbnd=0, scl=1, axis=0):
     return c
 
 
-@functools.partial(jit, static_argnames=("tensor",))
-def hermval(x, c, tensor=True):
+@wrap_jit(static_argnames=("tensor",))
+def hermval(x: ArrayLike, c: ArrayLike, tensor: bool = True) -> jax.Array:
     """
     Evaluate an Hermite series at points x.
 
@@ -916,8 +927,8 @@ def hermval(x, c, tensor=True):
     return c0 + c1 * x2
 
 
-@jit
-def hermval2d(x, y, c):
+@wrap_jit()
+def hermval2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D Hermite series at points (x, y).
 
     This function returns the values:
@@ -960,8 +971,8 @@ def hermval2d(x, y, c):
     return pu._valnd(hermval, c, x, y)
 
 
-@jit
-def hermgrid2d(x, y, c):
+@wrap_jit()
+def hermgrid2d(x: ArrayLike, y: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 2-D Hermite series on the Cartesian product of x and y.
 
     This function returns the values:
@@ -1008,8 +1019,8 @@ def hermgrid2d(x, y, c):
     return pu._gridnd(hermval, c, x, y)
 
 
-@jit
-def hermval3d(x, y, z, c):
+@wrap_jit()
+def hermval3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D Hermite series at points (x, y, z).
 
     This function returns the values:
@@ -1054,8 +1065,8 @@ def hermval3d(x, y, z, c):
     return pu._valnd(hermval, c, x, y, z)
 
 
-@jit
-def hermgrid3d(x, y, z, c):
+@wrap_jit()
+def hermgrid3d(x: ArrayLike, y: ArrayLike, z: ArrayLike, c: ArrayLike) -> jax.Array:
     r"""Evaluate a 3-D Hermite series on the Cartesian product of x, y, and z.
 
     This function returns the values:
@@ -1105,8 +1116,8 @@ def hermgrid3d(x, y, z, c):
     return pu._gridnd(hermval, c, x, y, z)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def hermvander(x, deg):
+@wrap_jit(static_argnames=("deg",))
+def hermvander(x: ArrayLike, deg: int) -> jax.Array:
     """Pseudo-Vandermonde matrix of given degree.
 
     Returns the pseudo-Vandermonde matrix of degree `deg` and sample points
@@ -1171,8 +1182,8 @@ def hermvander(x, deg):
     return jnp.moveaxis(v, 0, -1)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def hermvander2d(x, y, deg):
+@wrap_jit(static_argnames=("deg",))
+def hermvander2d(x: ArrayLike, y: ArrayLike, deg: Sequence[int]) -> jax.Array:
     """Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1220,8 +1231,10 @@ def hermvander2d(x, y, deg):
     return pu._vander_nd_flat((hermvander, hermvander), (x, y), deg)
 
 
-@functools.partial(jit, static_argnames=("deg",))
-def hermvander3d(x, y, z, deg):
+@wrap_jit(static_argnames=("deg",))
+def hermvander3d(
+    x: ArrayLike, y: ArrayLike, z: ArrayLike, deg: Sequence[int]
+) -> jax.Array:
     """Pseudo-Vandermonde matrix of given degrees.
 
     Returns the pseudo-Vandermonde matrix of degrees `deg` and sample
@@ -1270,8 +1283,49 @@ def hermvander3d(x, y, z, deg):
     return pu._vander_nd_flat((hermvander, hermvander, hermvander), (x, y, z), deg)
 
 
-@functools.partial(jit, static_argnames=("deg", "full"))
-def hermfit(x, y, deg, rcond=None, full=False, w=None):
+@overload
+def hermfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: Literal[False] = False,
+    w: ArrayLike | None = None,
+) -> jax.Array: ...
+
+
+@overload
+def hermfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@overload
+def hermfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    *,
+    full: Literal[True],
+    w: ArrayLike | None = None,
+) -> tuple[jax.Array, list[jax.Array]]: ...
+
+
+@wrap_jit(static_argnames=("deg", "full"))
+def hermfit(
+    x: ArrayLike,
+    y: ArrayLike,
+    deg: int | Sequence[int],
+    rcond: float | None = None,
+    full: bool = False,
+    w: ArrayLike | None = None,
+) -> jax.Array | tuple[jax.Array, list[jax.Array]]:
     r"""Least squares fit of Hermite series to data.
 
     Return the coefficients of a Hermite series of degree `deg` that is the
@@ -1386,8 +1440,8 @@ def hermfit(x, y, deg, rcond=None, full=False, w=None):
     return pu._fit(hermvander, x, y, deg, rcond, full, w)
 
 
-@jit
-def hermcompanion(c):
+@wrap_jit()
+def hermcompanion(c: ArrayLike) -> jax.Array:
     """Return the scaled companion matrix of c.
 
     The basis polynomials are scaled so that the companion matrix is
@@ -1427,8 +1481,8 @@ def hermcompanion(c):
     return mat
 
 
-@jit
-def hermroots(c):
+@wrap_jit()
+def hermroots(c: ArrayLike) -> jax.Array:
     r"""Compute the roots of a Hermite series.
 
     Return the roots (a.k.a. "zeros") of the polynomial
@@ -1490,8 +1544,8 @@ def hermroots(c):
     return r
 
 
-@jit
-def _normed_hermite_n(x, n):
+@wrap_jit()
+def _normed_hermite_n(x: jax.Array, n: int) -> jax.Array:
     """
     Evaluate a normalized Hermite polynomial.
 
@@ -1542,7 +1596,7 @@ def _normed_hermite_n(x, n):
     return jax.lax.cond(n == 0, truefun, falsefun)
 
 
-def hermgauss(deg):
+def hermgauss(deg: int) -> tuple[jax.Array, jax.Array]:
     r"""Gauss-Hermite quadrature.
 
     Computes the sample points and weights for Gauss-Hermite quadrature.
@@ -1605,8 +1659,8 @@ def hermgauss(deg):
     return x, w
 
 
-@jit
-def hermweight(x):
+@wrap_jit()
+def hermweight(x: ArrayLike) -> jax.Array:
     r"""Weight function of the Hermite polynomials.
 
     The weight function is :math:`\exp(-x^2)` and the interval of
@@ -1628,8 +1682,8 @@ def hermweight(x):
     return w
 
 
-@jit
-def hermnorm(n):
+@wrap_jit()
+def hermnorm(n: ArrayLike) -> jax.Array:
     r"""Norm of nth Hermite polynomial.
 
     The norm :math:`\gamma_n` is defined such that

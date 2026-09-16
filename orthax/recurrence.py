@@ -70,30 +70,40 @@ Classical Recurrence Relations
 """
 
 import abc
-from typing import Callable, Optional
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, TypeAlias
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+import numpy as np
 from jax.scipy.special import gammaln
 from jax.typing import ArrayLike
 
+if TYPE_CHECKING:
+    import quadax
 
-def _asarray(k, kmax=None):
-    k = jnp.asarray(k)
-    k = eqx.error_if(
-        k,
-        (k < 0).any(),
+# Lower and upper bounds of an interval, as any length 2 sequence or array of numbers.
+Domain: TypeAlias = Sequence[ArrayLike] | jax.Array | np.ndarray
+
+
+def _asarray(k: ArrayLike, kmax: int | None = None, check: bool = True) -> jax.Array:
+    karr = jnp.asarray(k)
+    if not check:
+        return karr
+    karr = eqx.error_if(
+        karr,
+        (karr < 0).any(),
         "Negative indices not allowed for recurrence coefficients.",
     )
     if kmax is not None:
-        k = eqx.error_if(
-            k,
-            (k > kmax).any(),
+        karr = eqx.error_if(
+            karr,
+            (karr > kmax).any(),
             "Requested recurrence coefficient outside of tabulated range.",
         )
 
-    return k
+    return karr
 
 
 class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
@@ -103,7 +113,7 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
     `weight`, `a`, `b`, `g`, `m`
     """
 
-    _domain: tuple[float, float]
+    _domain: Domain
 
     @abc.abstractmethod
     def weight(self, x: ArrayLike) -> jax.Array:
@@ -111,8 +121,8 @@ class AbstractRecurrenceRelation(eqx.Module, abc.ABC):
         pass
 
     @property
-    def domain(self) -> tuple[jax.Array, jax.Array]:
-        """tuple: Lower and upper bounds for inner product defining orthogonality."""
+    def domain(self) -> Domain:
+        """array_like: Lower and upper bounds for inner product."""
         return self._domain
 
     @abc.abstractmethod
@@ -143,8 +153,9 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
     ----------
     weight : callable
         Weight function.
-    domain : tuple
-        Lower and upper bounds for inner product defining orthogonality.
+    domain : array_like
+        Lower and upper bounds for inner product defining orthogonality, as a length
+        2 sequence or array.
     a, b : jax.Array
         Coefficients of the monic three term recurrence relation.
     g : jax.Array
@@ -153,6 +164,10 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
         ``m[k]`` is the coefficient of x**k in the kth orthogonal polynomial in the
         desired normalization. Default is 1 (monic form). For normalized form, set
         m = 1/g
+    check : bool
+        Whether to check that requested indices are within the tabulated range. Checks
+        use a runtime callback which can be slow. If False, indexing outside the
+        tabulated range silently returns incorrect values.
 
     """
 
@@ -161,15 +176,17 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
     _gk: jax.Array
     _mk: jax.Array
     _weight: Callable = eqx.field(static=True)
+    _check: bool = eqx.field(static=True)
 
     def __init__(
         self,
         weight: Callable,
-        domain: tuple,
+        domain: Domain,
         ak: jax.Array,
         bk: jax.Array,
         gk: jax.Array,
-        mk: Optional[jax.Array] = None,
+        mk: jax.Array | None = None,
+        check: bool = True,
     ):
         if mk is None:
             mk = jnp.ones_like(ak)
@@ -179,6 +196,7 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
         self._mk = mk
         self._weight = weight
         self._domain = domain
+        self._check = check
 
     def weight(self, x: ArrayLike) -> jax.Array:
         """Weight function defining inner product."""
@@ -186,22 +204,22 @@ class TabulatedRecurrenceRelation(AbstractRecurrenceRelation):
 
     def a(self, k: ArrayLike) -> jax.Array:
         """`a` coefficients of the monic three term recurrence relation."""
-        k = _asarray(k, kmax=len(self._ak) - 1)
+        k = _asarray(k, kmax=len(self._ak) - 1, check=self._check)
         return self._ak[k]
 
     def b(self, k: ArrayLike) -> jax.Array:
         """`b` coefficients of the monic three term recurrence relation."""
-        k = _asarray(k, kmax=len(self._bk) - 1)
+        k = _asarray(k, kmax=len(self._bk) - 1, check=self._check)
         return self._bk[k]
 
     def g(self, k: ArrayLike) -> jax.Array:
         """Weighted norm of the kth monic orthogonal polynomial."""
-        k = _asarray(k, kmax=len(self._gk) - 1)
+        k = _asarray(k, kmax=len(self._gk) - 1, check=self._check)
         return self._gk[k]
 
     def m(self, k: ArrayLike) -> jax.Array:
         """Coefficient of x**k in the kth polynomial in the desired normalization."""
-        k = _asarray(k, kmax=len(self._mk) - 1)
+        k = _asarray(k, kmax=len(self._mk) - 1, check=self._check)
         return self._mk[k]
 
 
@@ -210,8 +228,9 @@ class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
 
     Parameters
     ----------
-    domain : tuple
-        Lower and upper bounds for inner product defining orthogonality.
+    domain : array_like
+        Lower and upper bounds for inner product defining orthogonality, as a length
+        2 sequence or array.
     scale : {"standard", "monic", "normalized"}
         Most classical orthogonal polynomials have ad-hoc normalizations (ie,
         the common definitions in textbooks are neither monic nor unit norm). This
@@ -221,19 +240,19 @@ class ClassicalRecurrenceRelation(AbstractRecurrenceRelation, abc.ABC):
 
     _scale: str = eqx.field(static=True)
 
-    def __init__(self, domain: tuple, scale: str = "standard"):
+    def __init__(self, domain: Domain, scale: str = "standard"):
         assert scale in {"standard", "monic", "normalized"}
 
         self._domain = domain
         self._scale = scale
 
     @abc.abstractmethod
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         # norm of the kth polynomial in "standard" scaling (ie, AS, wikipedia, etc)
         pass
 
     @abc.abstractmethod
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         # coefficient of x**k in "standard" scaling (ie, AS, wikipedia, etc)
         pass
 
@@ -295,10 +314,10 @@ class Legendre(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, 2, 1 / (4 - 1 / jnp.where(k == 0, 1, k) ** 2))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(2 / (2 * k + 1))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.exp(
             k * jnp.log(2) - gammaln(k + 1) + gammaln(k + 0.5) - gammaln(0.5)
         )
@@ -335,10 +354,10 @@ class ShiftedLegendre(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, 1, 0.25 / (4 - 1 / jnp.where(k == 0, 1, k) ** 2))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(1 / (2 * k + 1))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.exp(
             2 * k * jnp.log(2) - gammaln(k + 1) + gammaln(k + 0.5) - gammaln(0.5)
         )
@@ -376,10 +395,10 @@ class ChebyshevT(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.pi, jnp.where(k == 1, 1 / 2, 1 / 4))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(jnp.where(k == 0, jnp.pi, jnp.pi / 2))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.where(k == 0, 1, 2 ** jnp.maximum(0.0, k - 1.0))
 
 
@@ -415,10 +434,10 @@ class ChebyshevU(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.pi / 2, 1 / 4)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.full(k.shape, jnp.sqrt(jnp.pi / 2))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return 2 ** jnp.asarray(k).astype(float)
 
 
@@ -454,10 +473,10 @@ class ChebyshevV(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.pi, 1 / 4)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.full(k.shape, jnp.sqrt(jnp.pi))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return 2 ** jnp.asarray(k).astype(float)
 
 
@@ -493,10 +512,10 @@ class ChebyshevW(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.pi, 1 / 4)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.full(k.shape, jnp.sqrt(jnp.pi))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return 2 ** jnp.asarray(k).astype(float)
 
 
@@ -521,14 +540,13 @@ class Gegenbauer(ClassicalRecurrenceRelation):
     lmbda: jax.Array
 
     def __init__(self, lmbda: ArrayLike, scale: str = "standard"):
-        lmbda = jnp.asarray(lmbda)
-        lmbda = eqx.error_if(lmbda, lmbda <= -0.5, "lmbda must be > -1/2")
+        lam = jnp.asarray(lmbda)
+        lam = eqx.error_if(lam, lam <= -0.5, "lmbda must be > -1/2")
         lam_zero_err = """
         Classical Gegenbauer polynomials are undefined for lmbda==0,
         consider using ChebyshevT which has similar orthogonality properties
         but with a well behaved normalization"""
-        lmbda = eqx.error_if(lmbda, lmbda == 0.0, lam_zero_err)
-        self.lmbda = lmbda
+        self.lmbda = eqx.error_if(lam, lam == 0.0, lam_zero_err)
         super().__init__(domain=(-1, 1), scale=scale)
 
     def weight(self, x: ArrayLike) -> jax.Array:
@@ -553,7 +571,7 @@ class Gegenbauer(ClassicalRecurrenceRelation):
         )
         return jnp.where(k == 0, b0, bknum / jnp.where(k == 0, 1, bkden))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         lognum = (
             (1 - 2 * self.lmbda) * jnp.log(2)
             + jnp.log(jnp.pi)
@@ -565,7 +583,7 @@ class Gegenbauer(ClassicalRecurrenceRelation):
         )
         return sgn * jnp.exp(0.5 * (lognum - logden))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.exp(
             k * jnp.log(2)
             - gammaln(k + 1)
@@ -633,13 +651,13 @@ class Jacobi(ClassicalRecurrenceRelation):
         )
         return jnp.where(k == 0, b0, num / den)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         a, b = self.alpha, self.beta
         lognum = (a + b + 1) * jnp.log(2) + gammaln(k + a + 1) + gammaln(k + b + 1)
         logden = jnp.log(2 * k + a + b + 1) + gammaln(k + a + b + 1) + gammaln(k + 1)
         return jnp.exp(0.5 * (lognum - logden))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         a, b = self.alpha, self.beta
         logm = (
             gammaln(2 * k + a + b + 1)
@@ -682,10 +700,10 @@ class Laguerre(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, 1, k**2)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.ones(jnp.asarray(k).shape)
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return (-1) ** k * jnp.exp(-gammaln(k + 1))
 
 
@@ -727,10 +745,10 @@ class GeneralizedLaguerre(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.exp(gammaln(self.alpha + 1)), k * (k + self.alpha))
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.exp(-0.5 * gammaln(k + 1) + 0.5 * gammaln(k + self.alpha + 1))
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return (-1) ** k * jnp.exp(-gammaln(k + 1))
 
 
@@ -766,10 +784,10 @@ class Hermite(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.sqrt(jnp.pi), k / 2)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(jnp.sqrt(jnp.pi)) * 2 ** (k / 2) * jnp.exp(gammaln(k + 1) / 2)
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return 2 ** jnp.asarray(k).astype(float)
 
 
@@ -805,41 +823,51 @@ class HermiteE(ClassicalRecurrenceRelation):
         k = _asarray(k)
         return jnp.where(k == 0, jnp.sqrt(2 * jnp.pi), k)
 
-    def _std_norm(self, k: ArrayLike) -> jax.Array:
+    def _std_norm(self, k: jax.Array) -> jax.Array:
         return jnp.sqrt(jnp.sqrt(2 * jnp.pi)) * jnp.exp(gammaln(k + 1) / 2)
 
-    def _std_scale(self, k: ArrayLike) -> jax.Array:
+    def _std_scale(self, k: jax.Array) -> jax.Array:
         return jnp.ones_like(k)
 
 
-@jax.jit
-def _polyval(x, n, a, b):
-    a, b = map(lambda x: jnp.atleast_1d(jnp.asarray(x)), (a, b))
+def _orthonormal_polyval(
+    x: ArrayLike, n: ArrayLike, a: jax.Array, sb: jax.Array
+) -> jax.Array:
+    """Evaluate p_n from sb_{k+1} p_{k+1} = (x - a_k) p_k - sb_k p_{k-1}."""
     x = jnp.asarray(x)
 
-    p0 = jnp.zeros_like(x)
-    p1 = jnp.ones_like(x)
-    pn = p1
+    def body(k, state):
+        p0, p1 = state
+        return p1, ((x - a[k]) * p1 - sb[k] * p0) / sb[k + 1]
 
-    def body(i, state):
-        p0, p1, pn = state
-        pn = (x - a[i]) * p1 - b[i] * p0
-        p0 = p1
-        p1 = pn
-        return p0, p1, pn
+    init = (jnp.zeros_like(x), jnp.ones_like(x) / sb[0])
+    return jax.lax.fori_loop(0, n, body, init)[1]
 
-    npos = lambda: jax.lax.fori_loop(0, n, body, (p0, p1, pn))[-1]
-    nneg = lambda: jnp.zeros_like(x)
-    return jax.lax.cond(n >= 0, npos, nneg)
+
+def _orthonormal_basis(x: ArrayLike, a: jax.Array, sb: jax.Array) -> jax.Array:
+    """Evaluate p_0, ..., p_{n-1} from the same recurrence, for n = len(a)."""
+    x = jnp.asarray(x)
+
+    def body(state, k):
+        p0, p1 = state
+        p2 = ((x - a[k]) * p1 - sb[k] * p0) / sb[k + 1]
+        return (p1, p2), p2
+
+    init = (jnp.zeros_like(x), jnp.ones_like(x) / sb[0])
+    _, ps = jax.lax.scan(body, init, jnp.arange(a.size - 1))
+    return jnp.concatenate([init[1][None], ps])
 
 
 def generate_recurrence(
     weight: Callable,
-    domain: tuple,
+    domain: Domain,
     n: int,
     scale: str = "monic",
-    quadrule=None,
-    quadopts: Optional[dict] = None,
+    quadrule: "quadax.AbstractQuadratureRule | None" = None,
+    quadopts: dict | None = None,
+    check: bool = True,
+    tol: float | None = None,
+    throw: bool = False,
 ) -> TabulatedRecurrenceRelation:
     r"""Generate recurrence relation coefficients for orthogonal polynomial family.
 
@@ -859,18 +887,33 @@ def generate_recurrence(
     ----------
     weight : callable
         Weight function.
-    domain : tuple of float
-        Lower and upper bounds for the domain of the polynomials.
+    domain : array_like
+        Lower and upper bounds for the domain of the polynomials, as a length 2
+        sequence or array.
     n : int
         Number of terms to generate, ie, highest order of polynomial desired.
     scale : {"monic", "normalized"}
         How to scale the resulting polynomials.
     quadrule : quadax.AbstractQuadratureRule, optional
         Quadrature rule to use for computing integrals in generating recurrence
-        coefficients. Defaults to ``quadax.TanhSinhRule(order=129)``.
+        coefficients. Defaults to ``quadax.GaussKronrodRule(order=31)``.
     quadopts : dict, optional
-        Additional options passed to ``quadax.adaptive_quadrature``. Default options
-        are ``epsabs=1e-15``, ``epsrel=1e-15``, ``max_ninter=500``.
+        Additional options passed to ``quadax.adaptive_quadrature``. Default is
+        ``max_ninter=500``. The quadrature tolerances are chosen based on ``tol``, and
+        overriding them with ``epsabs`` or ``epsrel`` here may prevent reaching it.
+    check : bool
+        Whether the returned recurrence relation checks that requested indices are
+        within the tabulated range. See ``TabulatedRecurrenceRelation``.
+    tol : float, optional
+        Relative error tolerance for the coefficients. The error in :math:`b_i` and
+        :math:`g_i` is measured relative to their values, and the error in :math:`a_i`
+        relative to :math:`|a_i| + \sqrt{b_i} + \sqrt{b_{i+1}}`. Default is the square
+        root of the machine precision of the dtype of ``domain`` (or the default float
+        type if ``domain`` is not a floating point array).
+    throw : bool
+        Whether to raise an error if the estimated error in the coefficients exceeds
+        ``tol``. The estimate is a conservative first order bound based on the error
+        estimates from the quadrature, so the actual error is usually much smaller.
 
     Returns
     -------
@@ -891,50 +934,113 @@ def generate_recurrence(
             + "to generate custom orthogonal polynomials."
         ) from e
 
-    # p-adaptive might be better here, or bootstrapped gauss
-    rule = quadrule or quadax.TanhSinhRule(129)
-    opts = quadopts or {}
-    opts.setdefault("epsabs", 1e-15)
-    opts.setdefault("epsrel", 1e-15)
-    opts.setdefault("max_ninter", 500)
-    opts.setdefault("interval", jnp.asarray(domain))
-    quad = lambda fun: quadax.adaptive_quadrature(rule, fun, **opts)
+    # Gauss-Kronrod with extrapolation handles the endpoint singularities common in
+    # weight functions well, without needing to evaluate the weight close to the
+    # endpoint where the distance to it is lost to roundoff.
+    rule = quadax.GaussKronrodRule(31) if quadrule is None else quadrule
+    interval = jnp.asarray(domain)
+    if not jnp.issubdtype(interval.dtype, jnp.inexact):
+        interval = interval.astype(jnp.result_type(float))
+    dtype = interval.dtype
+    if tol is None:
+        tol = float(jnp.sqrt(jnp.finfo(dtype).eps))
 
-    @jax.jit
-    def inner(n, a, b):
-        fun = lambda x: _polyval(x, n, a, b) ** 2 * weight(x)
-        return quad(fun)
+    def quad(fun, eps):
+        opts = {"epsabs": eps, "epsrel": eps, "max_ninter": 500, "interval": interval}
+        opts.update(quadopts or {})
+        return quadax.adaptive_quadrature(rule, fun, **opts)
 
+    # Stieltjes procedure in orthonormal form, where sb = sqrt(b). Working with
+    # orthonormal rather than monic polynomials keeps every integrand O(1), so the
+    # quadrature tolerances are effectively relative. The norms of monic polynomials
+    # grow or decay geometrically with degree, which lets a fixed absolute tolerance
+    # dominate at high degree. The correction below removes the effect of errors made
+    # here to first order, so this only needs to be accurate enough to give a well
+    # conditioned basis.
     @jax.jit
-    def innerx(n, a, b):
-        fun = lambda x: x * _polyval(x, n, a, b) ** 2 * weight(x)
-        return quad(fun)
+    def moments(i, a, sb):
+        def fun(x):
+            p = _orthonormal_polyval(x, i, a, sb)
+            return jnp.stack([jnp.ones_like(x), x]) * p**2 * weight(x)
+
+        return quad(fun, jnp.sqrt(tol))[0]
 
     def body(i, state):
-        aa, bb, cc, errs, status = state
-        m0, out = inner(i, aa, bb)
-        errs = errs.at[i, 0].set(out.err)
-        status = status.at[i, 0].set(out.status)
-        cc = cc.at[i].set(m0)
-        ai, out = innerx(i, aa, bb)
-        errs = errs.at[i, 1].set(out.err)
-        status = status.at[i, 1].set(out.status)
-        aa = aa.at[i].set(ai / cc[i])
-        bb = bb.at[i].set(jnp.where(i == 0, m0, cc[i] / cc[i - 1]))
-        return aa, bb, cc, errs, status
+        a, sb = state
+        # sb[i] is still 1 here, so p_i is only orthonormal up to a factor of sqrt(b_i)
+        # which the zeroth moment gives.
+        m0, m1 = moments(i, a, sb)
+        return a.at[i].set(m1 / m0), sb.at[i].set(jnp.sqrt(m0))
 
-    aa = jnp.zeros(n)
-    bb = jnp.zeros(n)
-    cc = jnp.zeros(n)
-    status = jnp.zeros((n, 2))
-    errs = jnp.zeros((n, 2))
+    init = (jnp.zeros(n, dtype), jnp.ones(n, dtype))
+    aa, sb = jax.lax.fori_loop(0, n, body, init)
 
-    aa, bb, cc, errs, status = jax.lax.fori_loop(0, n, body, (aa, bb, cc, errs, status))
-    # TODO: figure out uncertainties better
-    g = jnp.sqrt(cc)
+    # Quadrature errors in early coefficients propagate into all later polynomials. To
+    # correct for this, compute the Gram matrix M0 = <p p^T> and M1 = <x p p^T> in the
+    # approximate basis, all in a single quadrature so no errors compound. With
+    # M0 = L L^T, the polynomials L^-1 p are orthonormal and their Jacobi matrix
+    # J = L^-1 M1 L^-T gives corrected coefficients. L is lower triangular with positive
+    # diagonal, so this preserves the degree and sign of each polynomial. The result is
+    # exact for any basis up to the quadrature error in M0 and M1, which is amplified
+    # by roughly 1 + 2|J| in each coefficient, and accumulates over all i in g_i.
+    # Using the Jacobi matrix from the loop to estimate that amplification, the
+    # quadrature tolerance is chosen so the error bound computed below meets tol.
+    offdiag = jnp.concatenate([sb[1:], jnp.zeros(1, dtype)])
+    rowsum = jnp.abs(aa) + jnp.concatenate([jnp.zeros(1, dtype), sb[1:]]) + offdiag
+    amplification = 1 + 2 * jnp.max(rowsum)
+    headroom = jnp.minimum(jnp.min(rowsum), jnp.min(sb[1:], initial=jnp.inf) / n)
+    # Asking for accuracy below roundoff gains nothing and can degrade the result, since
+    # the adaptive refinement then only accumulates roundoff.
+    eps = tol * jnp.minimum(headroom, 1) / (2 * amplification)
+    eps = jnp.maximum(eps, 100 * jnp.finfo(dtype).eps)
+    iu, ju = jnp.triu_indices(n)
+
+    def gram(x):
+        p = _orthonormal_basis(x, aa, sb)
+        pp = p[iu] * p[ju] * weight(x)
+        return jnp.stack([pp, x * pp])
+
+    def symmetric(m):
+        M = jnp.zeros((n, n), dtype).at[iu, ju].set(m)
+        return M + jnp.triu(M, 1).T
+
+    (m0, m1), info = jax.jit(lambda: quad(gram, eps))()
+    M0, M1 = symmetric(m0), symmetric(m1)
+    L = jnp.linalg.cholesky(M0)
+    Linv = jax.scipy.linalg.solve_triangular(L, jnp.eye(n, dtype=dtype), lower=True)
+    J = Linv @ M1 @ Linv.T
+
+    aa = jnp.diag(J)
+    # p_0 = 1/sb_0 so M0[0, 0] = b_0 / sb_0**2, and the remaining sb are off diagonal
+    sb = jnp.concatenate([(sb[0] * jnp.sqrt(M0[0, 0]))[None], jnp.diag(J, -1)])
+    bb = sb**2
+    g = jnp.sqrt(jnp.cumprod(bb))
+
+    if throw:
+        # First order bound on the error in J, given an error of at most info.err in
+        # each entry of M0 and M1. Perturbing M0 = L L^T gives
+        # L^-1 dM0 L^-T = X + X^T for X = L^-1 dL, which is lower triangular, so
+        # dJ = L^-1 dM1 L^-T - X J - J X^T.
+        r = jnp.abs(Linv).sum(axis=1)
+        T = info.err * jnp.outer(r, r)
+        X = jnp.tril(T, -1) + jnp.diag(jnp.diag(T)) / 2
+        dJ = T + X @ jnp.abs(J) + jnp.abs(J) @ X.T
+        da = jnp.diag(dJ) / (jnp.abs(J).sum(axis=1))
+        dsb = jnp.concatenate(
+            [(info.err / (2 * M0[0, 0]))[None], jnp.diag(dJ, -1) / sb[1:]]
+        )
+        # relative errors in b and g are 2 dsb/sb and the cumulative sum of dsb/sb
+        err = jnp.maximum(jnp.maximum(da, 2 * dsb), jnp.cumsum(dsb))
+        g = eqx.error_if(
+            g,
+            ~jnp.all(err <= tol) | ~jnp.all(jnp.isfinite(g)),
+            "Estimated error in recurrence coefficients exceeds tol. Try increasing "
+            "tol or max_ninter in quadopts, or using a different quadrature rule.",
+        )
+
     if scale == "monic":
         m = jnp.ones_like(g)
     else:  # normalized
         m = 1 / g
 
-    return TabulatedRecurrenceRelation(weight, domain, aa, bb, g, m)
+    return TabulatedRecurrenceRelation(weight, domain, aa, bb, g, m, check=check)

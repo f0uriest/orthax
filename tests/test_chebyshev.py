@@ -40,14 +40,14 @@ class TestPrivate:
         for i in range(5):
             inp = np.array([2] + [1] * i, np.double)
             tgt = np.array([0.5] * i + [2] + [0.5] * i, np.double)
-            res = cheb._cseries_to_zseries(inp)
+            res = cheb._cseries_to_zseries(inp)  # pyright: ignore[reportArgumentType]
             assert_array_equal(res, tgt)
 
     def test__zseries_to_cseries(self):
         for i in range(5):
             inp = np.array([0.5] * i + [2] + [0.5] * i, np.double)
             tgt = np.array([2] + [1] * i, np.double)
-            res = cheb._zseries_to_cseries(inp)
+            res = cheb._zseries_to_cseries(inp)  # pyright: ignore[reportArgumentType]
             assert_array_equal(res, tgt)
 
 
@@ -73,7 +73,7 @@ class TestArithmetic:
                 tgt = np.zeros(max(i, j) + 1)
                 tgt[i] += 1
                 tgt[j] += 1
-                res = cheb.chebadd([0] * i + [1], [0] * j + [1])
+                res = cheb.chebadd(np.array([0] * i + [1]), np.array([0] * j + [1]))
                 assert_array_equal(trim(res), trim(tgt), err_msg=msg)
 
     def test_chebsub(self):
@@ -83,16 +83,16 @@ class TestArithmetic:
                 tgt = np.zeros(max(i, j) + 1)
                 tgt[i] += 1
                 tgt[j] -= 1
-                res = cheb.chebsub([0] * i + [1], [0] * j + [1])
+                res = cheb.chebsub(np.array([0] * i + [1]), np.array([0] * j + [1]))
                 assert_array_equal(trim(res), trim(tgt), err_msg=msg)
 
     def test_chebmulx(self):
-        assert_array_equal(trim(cheb.chebmulx([0])), [0])
-        assert_array_equal(trim(cheb.chebmulx([1])), [0, 1])
+        assert_array_equal(trim(cheb.chebmulx(np.array([0]))), [0])
+        assert_array_equal(trim(cheb.chebmulx(np.array([1]))), [0, 1])
         for i in range(1, 5):
             ser = [0] * i + [1]
             tgt = [0] * (i - 1) + [0.5, 0, 0.5]
-            assert_array_equal(trim(cheb.chebmulx(ser)), tgt)
+            assert_array_equal(trim(cheb.chebmulx(np.array(ser))), tgt)
 
     def test_chebmul(self):
         for i in range(5):
@@ -101,7 +101,7 @@ class TestArithmetic:
                 tgt = np.zeros(i + j + 1)
                 tgt[i + j] += 0.5
                 tgt[abs(i - j)] += 0.5
-                res = cheb.chebmul([0] * i + [1], [0] * j + [1])
+                res = cheb.chebmul(np.array([0] * i + [1]), np.array([0] * j + [1]))
                 assert_array_equal(trim(res), trim(tgt), err_msg=msg)
 
     def test_chebdiv(self):
@@ -110,9 +110,9 @@ class TestArithmetic:
                 msg = f"At i={i}, j={j}"
                 ci = [0] * i + [1]
                 cj = [0] * j + [1]
-                tgt = cheb.chebadd(ci, cj)
-                quo, rem = cheb.chebdiv(tgt, ci)
-                res = cheb.chebadd(cheb.chebmul(quo, ci), rem)
+                tgt = cheb.chebadd(np.array(ci), np.array(cj))
+                quo, rem = cheb.chebdiv(tgt, np.array(ci))
+                res = cheb.chebadd(cheb.chebmul(quo, np.array(ci)), rem)
                 assert_array_equal(trim(res), trim(tgt), err_msg=msg)
 
     def test_chebpow(self):
@@ -137,7 +137,7 @@ class TestEvaluation:
 
     def test_chebval(self):
         # check empty input
-        assert_array_equal(cheb.chebval([], [1]).size, 0)
+        assert_array_equal(cheb.chebval(np.array([]), np.array([1])).size, 0)
 
         # check normal input)
         x = np.linspace(-1, 1)
@@ -145,16 +145,16 @@ class TestEvaluation:
         for i in range(10):
             msg = f"At i={i}"
             tgt = y[i]
-            res = cheb.chebval(x, [0] * i + [1])
+            res = cheb.chebval(x, np.array([0] * i + [1]))
             assert_array_almost_equal(res, tgt, err_msg=msg)
 
         # check that shape is preserved
         for i in range(3):
             dims = [2] * i
             x = np.zeros(dims)
-            assert_array_equal(cheb.chebval(x, [1]).shape, dims)
-            assert_array_equal(cheb.chebval(x, [1, 0]).shape, dims)
-            assert_array_equal(cheb.chebval(x, [1, 0, 0]).shape, dims)
+            assert_array_equal(cheb.chebval(x, np.array([1])).shape, dims)
+            assert_array_equal(cheb.chebval(x, np.array([1, 0])).shape, dims)
+            assert_array_equal(cheb.chebval(x, np.array([1, 0, 0])).shape, dims)
 
     def test_chebval2d(self):
         x1, x2, x3 = self.x
@@ -222,17 +222,17 @@ class TestEvaluation:
 class TestIntegral:
     def test_chebint(self):  # noqa:C901
         # check exceptions
-        assert_raises(TypeError, cheb.chebint, [0], 0.5)
-        assert_raises(ValueError, cheb.chebint, [0], -1)
-        assert_raises(ValueError, cheb.chebint, [0], 1, [0, 0])
-        assert_raises(ValueError, cheb.chebint, [0], lbnd=[0])
-        assert_raises(ValueError, cheb.chebint, [0], scl=[0])
-        assert_raises(TypeError, cheb.chebint, [0], axis=0.5)
+        assert_raises(TypeError, cheb.chebint, np.array([0]), 0.5)  # pyright: ignore[reportArgumentType]
+        assert_raises(ValueError, cheb.chebint, np.array([0]), -1)
+        assert_raises(ValueError, cheb.chebint, np.array([0]), 1, [0, 0])
+        assert_raises(ValueError, cheb.chebint, np.array([0]), lbnd=np.array([0]))
+        assert_raises(ValueError, cheb.chebint, np.array([0]), scl=np.array([0]))
+        assert_raises(TypeError, cheb.chebint, np.array([0]), axis=0.5)  # pyright: ignore[reportArgumentType]
 
         # test integration of zero polynomial
         for i in range(2, 5):
             k = [0] * (i - 2) + [1]
-            res = cheb.chebint([0], m=i, k=k)
+            res = cheb.chebint(np.array([0]), m=i, k=k)
             assert_array_almost_equal(trim(res), [0, 1])
 
         # check single integration with integration constant
@@ -240,7 +240,7 @@ class TestIntegral:
             scl = i + 1
             pol = [0] * i + [1]
             tgt = [i] + [0] * i + [1 / scl]
-            chebpol = cheb.poly2cheb(pol)
+            chebpol = cheb.poly2cheb(np.array(pol))
             chebint = cheb.chebint(chebpol, m=1, k=[i])
             res = cheb.cheb2poly(chebint)
             assert_array_almost_equal(trim(res), trim(tgt))
@@ -249,7 +249,7 @@ class TestIntegral:
         for i in range(5):
             scl = i + 1
             pol = [0] * i + [1]
-            chebpol = cheb.poly2cheb(pol)
+            chebpol = cheb.poly2cheb(np.array(pol))
             chebint = cheb.chebint(chebpol, m=1, k=[i], lbnd=-1)
             assert_array_almost_equal(cheb.chebval(-1, chebint), i)
 
@@ -258,7 +258,7 @@ class TestIntegral:
             scl = i + 1
             pol = [0] * i + [1]
             tgt = [i] + [0] * i + [2 / scl]
-            chebpol = cheb.poly2cheb(pol)
+            chebpol = cheb.poly2cheb(np.array(pol))
             chebint = cheb.chebint(chebpol, m=1, k=[i], scl=2)
             res = cheb.cheb2poly(chebint)
             assert_array_almost_equal(trim(res), trim(tgt))
@@ -269,8 +269,8 @@ class TestIntegral:
                 pol = [0] * i + [1]
                 tgt = pol[:]
                 for k in range(j):
-                    tgt = cheb.chebint(tgt, m=1)
-                res = cheb.chebint(pol, m=j)
+                    tgt = cheb.chebint(np.array(tgt), m=1)
+                res = cheb.chebint(np.array(pol), m=j)
                 assert_array_almost_equal(trim(res), trim(tgt))
 
         # check multiple integrations with defined k
@@ -279,8 +279,8 @@ class TestIntegral:
                 pol = [0] * i + [1]
                 tgt = pol[:]
                 for k in range(j):
-                    tgt = cheb.chebint(tgt, m=1, k=[k])
-                res = cheb.chebint(pol, m=j, k=list(range(j)))
+                    tgt = cheb.chebint(np.array(tgt), m=1, k=[k])
+                res = cheb.chebint(np.array(pol), m=j, k=list(range(j)))
                 assert_array_almost_equal(trim(res), trim(tgt))
 
         # check multiple integrations with lbnd
@@ -289,8 +289,8 @@ class TestIntegral:
                 pol = [0] * i + [1]
                 tgt = pol[:]
                 for k in range(j):
-                    tgt = cheb.chebint(tgt, m=1, k=[k], lbnd=-1)
-                res = cheb.chebint(pol, m=j, k=list(range(j)), lbnd=-1)
+                    tgt = cheb.chebint(np.array(tgt), m=1, k=[k], lbnd=-1)
+                res = cheb.chebint(np.array(pol), m=j, k=list(range(j)), lbnd=-1)
                 assert_array_almost_equal(trim(res), trim(tgt))
 
         # check multiple integrations with scaling
@@ -299,8 +299,8 @@ class TestIntegral:
                 pol = [0] * i + [1]
                 tgt = pol[:]
                 for k in range(j):
-                    tgt = cheb.chebint(tgt, m=1, k=[k], scl=2)
-                res = cheb.chebint(pol, m=j, k=list(range(j)), scl=2)
+                    tgt = cheb.chebint(np.array(tgt), m=1, k=[k], scl=2)
+                res = cheb.chebint(np.array(pol), m=j, k=list(range(j)), scl=2)
                 assert_array_almost_equal(trim(res), trim(tgt))
 
     def test_chebint_axis(self):
@@ -323,27 +323,29 @@ class TestIntegral:
 class TestDerivative:
     def test_chebder(self):
         # check exceptions
-        assert_raises(TypeError, cheb.chebder, [0], 0.5)
-        assert_raises(ValueError, cheb.chebder, [0], -1)
+        assert_raises(TypeError, cheb.chebder, np.array([0]), 0.5)  # pyright: ignore[reportArgumentType]
+        assert_raises(ValueError, cheb.chebder, np.array([0]), -1)
 
         # check that zeroth derivative does nothing
         for i in range(5):
             tgt = [0] * i + [1]
-            res = cheb.chebder(tgt, m=0)
+            res = cheb.chebder(np.array(tgt), m=0)
             assert_array_equal(trim(res), trim(tgt))
 
         # check that derivation is the inverse of integration
         for i in range(5):
             for j in range(2, 5):
                 tgt = [0] * i + [1]
-                res = cheb.chebder(cheb.chebint(tgt, m=j), m=j)
+                res = cheb.chebder(cheb.chebint(np.array(tgt), m=j), m=j)
                 assert_array_almost_equal(trim(res), trim(tgt))
 
         # check derivation with scaling
         for i in range(5):
             for j in range(2, 5):
                 tgt = [0] * i + [1]
-                res = cheb.chebder(cheb.chebint(tgt, m=j, scl=2), m=j, scl=0.5)
+                res = cheb.chebder(
+                    cheb.chebint(np.array(tgt), m=j, scl=2), m=j, scl=0.5
+                )
                 assert_array_almost_equal(trim(res), trim(tgt))
 
     def test_chebder_axis(self):
@@ -370,7 +372,7 @@ class TestVander:
         assert_(v.shape == (3, 4))
         for i in range(4):
             coef = [0] * i + [1]
-            assert_array_almost_equal(v[..., i], cheb.chebval(x, coef))
+            assert_array_almost_equal(v[..., i], cheb.chebval(x, np.array(coef)))
 
         # check for 2d x
         x = np.array([[1, 2], [3, 4], [5, 6]])
@@ -378,7 +380,7 @@ class TestVander:
         assert_(v.shape == (3, 2, 4))
         for i in range(4):
             coef = [0] * i + [1]
-            assert_array_almost_equal(v[..., i], cheb.chebval(x, coef))
+            assert_array_almost_equal(v[..., i], cheb.chebval(x, np.array(coef)))
 
     def test_chebvander2d(self):
         # also tests chebval2d for non-square coefficient array
@@ -390,7 +392,7 @@ class TestVander:
         assert_array_almost_equal(res, tgt)
 
         # check shape
-        van = cheb.chebvander2d([x1], [x2], (1, 2))
+        van = cheb.chebvander2d(np.array([x1]), np.array([x2]), (1, 2))
         assert_(van.shape == (1, 5, 6))
 
     def test_chebvander3d(self):
@@ -403,7 +405,9 @@ class TestVander:
         assert_array_almost_equal(res, tgt)
 
         # check shape
-        van = cheb.chebvander3d([x1], [x2], [x3], (1, 2, 3))
+        van = cheb.chebvander3d(
+            np.array([x1]), np.array([x2]), np.array([x3]), (1, 2, 3)
+        )
         assert_(van.shape == (1, 5, 24))
 
 
@@ -416,17 +420,23 @@ class TestFitting:
             return x**4 + x**2 + 1
 
         # Test exceptions
-        assert_raises(ValueError, cheb.chebfit, [1], [1], -1)
-        assert_raises(TypeError, cheb.chebfit, [[1]], [1], 0)
-        assert_raises(TypeError, cheb.chebfit, [], [1], 0)
-        assert_raises(TypeError, cheb.chebfit, [1], [[[1]]], 0)
-        assert_raises(TypeError, cheb.chebfit, [1, 2], [1], 0)
-        assert_raises(TypeError, cheb.chebfit, [1], [1, 2], 0)
-        assert_raises(TypeError, cheb.chebfit, [1], [1], 0, w=[[1]])
-        assert_raises(TypeError, cheb.chebfit, [1], [1], 0, w=[1, 1])
-        assert_raises(ValueError, cheb.chebfit, [1], [1], (-1,))
-        assert_raises(ValueError, cheb.chebfit, [1], [1], (2, -1, 6))
-        assert_raises(TypeError, cheb.chebfit, [1], [1], ())
+        assert_raises(ValueError, cheb.chebfit, np.array([1]), np.array([1]), -1)
+        assert_raises(TypeError, cheb.chebfit, np.array([[1]]), np.array([1]), 0)
+        assert_raises(TypeError, cheb.chebfit, np.array([]), np.array([1]), 0)
+        assert_raises(TypeError, cheb.chebfit, np.array([1]), np.array([[[1]]]), 0)
+        assert_raises(TypeError, cheb.chebfit, np.array([1, 2]), np.array([1]), 0)
+        assert_raises(TypeError, cheb.chebfit, np.array([1]), np.array([1, 2]), 0)
+        assert_raises(
+            TypeError, cheb.chebfit, np.array([1]), np.array([1]), 0, w=np.array([[1]])
+        )
+        assert_raises(
+            TypeError, cheb.chebfit, np.array([1]), np.array([1]), 0, w=np.array([1, 1])
+        )
+        assert_raises(ValueError, cheb.chebfit, np.array([1]), np.array([1]), (-1,))
+        assert_raises(
+            ValueError, cheb.chebfit, np.array([1]), np.array([1]), (2, -1, 6)
+        )
+        assert_raises(TypeError, cheb.chebfit, np.array([1]), np.array([1]), ())
 
         # Test fit
         x = np.linspace(0, 2)
@@ -471,8 +481,10 @@ class TestFitting:
         # test scaling with complex values x points whose square
         # is zero when summed.
         x = [1, 1j, -1, -1j]
-        assert_array_almost_equal(cheb.chebfit(x, x, 1), [0, 1])
-        assert_array_almost_equal(cheb.chebfit(x, x, (0, 1)), [0, 1])
+        assert_array_almost_equal(cheb.chebfit(np.array(x), np.array(x), 1), [0, 1])
+        assert_array_almost_equal(
+            cheb.chebfit(np.array(x), np.array(x), (0, 1)), [0, 1]
+        )
         # test fitting only even polynomials
         x = np.linspace(-1, 1)
         y = f2(x)
@@ -507,16 +519,16 @@ class TestInterpolate:
 
 class TestCompanion:
     def test_raises(self):
-        assert_raises(ValueError, cheb.chebcompanion, [])
-        assert_raises(ValueError, cheb.chebcompanion, [1])
+        assert_raises(ValueError, cheb.chebcompanion, np.array([]))
+        assert_raises(ValueError, cheb.chebcompanion, np.array([1]))
 
     def test_dimensions(self):
         for i in range(1, 5):
             coef = [0] * i + [1]
-            assert_(cheb.chebcompanion(coef).shape == (i, i))
+            assert_(cheb.chebcompanion(np.array(coef)).shape == (i, i))
 
     def test_linear_root(self):
-        assert_(cheb.chebcompanion([1, 2])[0, 0] == -0.5)
+        assert_(cheb.chebcompanion(np.array([1, 2]))[0, 0] == -0.5)
 
 
 class TestGauss:
@@ -539,7 +551,7 @@ class TestGauss:
 
 class TestMisc:
     def test_chebfromroots(self):
-        res = cheb.chebfromroots([])
+        res = cheb.chebfromroots(np.array([]))
         assert_array_almost_equal(trim(res), [1])
         for i in range(1, 5):
             roots = np.cos(np.linspace(-np.pi, 0, 2 * i + 1)[1::2])
@@ -548,8 +560,8 @@ class TestMisc:
             assert_array_almost_equal(trim(res), trim(tgt))
 
     def test_chebroots(self):
-        assert_array_almost_equal(cheb.chebroots([1]), [])
-        assert_array_almost_equal(cheb.chebroots([1, 2]), [-0.5])
+        assert_array_almost_equal(cheb.chebroots(np.array([1])), [])
+        assert_array_almost_equal(cheb.chebroots(np.array([1, 2])), [-0.5])
         for i in range(2, 5):
             tgt = np.linspace(-1, 1, i)
             res = cheb.chebroots(cheb.chebfromroots(tgt))
@@ -559,23 +571,23 @@ class TestMisc:
         coef = [2, -1, 1, 0]
 
         # Test exceptions
-        assert_raises(ValueError, cheb.chebtrim, coef, -1)
+        assert_raises(ValueError, cheb.chebtrim, np.array(coef), -1)
 
         # Test results
-        assert_array_equal(cheb.chebtrim(coef), coef[:-1])
-        assert_array_equal(cheb.chebtrim(coef, 1), coef[:-3])
-        assert_array_equal(cheb.chebtrim(coef, 2), [0])
+        assert_array_equal(cheb.chebtrim(np.array(coef)), coef[:-1])
+        assert_array_equal(cheb.chebtrim(np.array(coef), 1), coef[:-3])
+        assert_array_equal(cheb.chebtrim(np.array(coef), 2), [0])
 
     def test_chebline(self):
         assert_array_equal(cheb.chebline(3, 4), [3, 4])
 
     def test_cheb2poly(self):
         for i in range(10):
-            assert_array_almost_equal(cheb.cheb2poly([0] * i + [1]), Tlist[i])
+            assert_array_almost_equal(cheb.cheb2poly(np.array([0] * i + [1])), Tlist[i])
 
     def test_poly2cheb(self):
         for i in range(10):
-            assert_array_almost_equal(cheb.poly2cheb(Tlist[i]), [0] * i + [1])
+            assert_array_almost_equal(cheb.poly2cheb(np.array(Tlist[i])), [0] * i + [1])
 
     def test_weight(self):
         x = np.linspace(-1, 1, 11)[1:-1]
@@ -585,7 +597,7 @@ class TestMisc:
 
     def test_chebpts1(self):
         # test exceptions
-        assert_raises(ValueError, cheb.chebpts1, 1.5)
+        assert_raises(ValueError, cheb.chebpts1, 1.5)  # pyright: ignore[reportArgumentType]
         assert_raises(ValueError, cheb.chebpts1, 0)
 
         # test points
@@ -600,7 +612,7 @@ class TestMisc:
 
     def test_chebpts2(self):
         # test exceptions
-        assert_raises(ValueError, cheb.chebpts2, 1.5)
+        assert_raises(ValueError, cheb.chebpts2, 1.5)  # pyright: ignore[reportArgumentType]
         assert_raises(ValueError, cheb.chebpts2, 1)
 
         # test points
