@@ -17,6 +17,7 @@ Arithmetic
    orthsub
    orthmulx
    orthmul
+   orthdiv
    orthpow
    orthval
    orthval2d

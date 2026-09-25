@@ -112,6 +112,7 @@ __all__ = [
     "chebcompanion",
     "chebgauss",
     "chebweight",
+    "chebnorm",
     "chebinterpolate",
 ]
 
