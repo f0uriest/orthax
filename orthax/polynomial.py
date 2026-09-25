@@ -86,6 +86,7 @@ __all__ = [
     "polygrid3d",
     "polyvander2d",
     "polyvander3d",
+    "polycompanion",
 ]
 
 

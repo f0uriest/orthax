@@ -103,6 +103,7 @@ __all__ = [
     "hermecompanion",
     "hermegauss",
     "hermeweight",
+    "hermenorm",
 ]
 
 hermetrim = pu.trimcoef

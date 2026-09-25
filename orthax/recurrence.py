@@ -83,6 +83,24 @@ from jax.typing import ArrayLike
 if TYPE_CHECKING:
     import quadax
 
+__all__ = [
+    "generate_recurrence",
+    "AbstractRecurrenceRelation",
+    "TabulatedRecurrenceRelation",
+    "Legendre",
+    "ShiftedLegendre",
+    "ChebyshevT",
+    "ChebyshevU",
+    "ChebyshevV",
+    "ChebyshevW",
+    "Gegenbauer",
+    "Jacobi",
+    "Laguerre",
+    "GeneralizedLaguerre",
+    "Hermite",
+    "HermiteE",
+]
+
 # Lower and upper bounds of an interval, as any length 2 sequence or array of numbers.
 Domain: TypeAlias = Sequence[ArrayLike] | jax.Array | np.ndarray
 

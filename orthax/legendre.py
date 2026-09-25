@@ -107,6 +107,7 @@ __all__ = [
     "legcompanion",
     "leggauss",
     "legweight",
+    "legnorm",
 ]
 
 legtrim = pu.trimcoef

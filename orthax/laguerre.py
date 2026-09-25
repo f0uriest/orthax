@@ -103,6 +103,7 @@ __all__ = [
     "lagcompanion",
     "laggauss",
     "lagweight",
+    "lagnorm",
 ]
 
 lagtrim = pu.trimcoef
