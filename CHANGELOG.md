@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.2.11
+------
+- Bumps maximum jax version to 0.12.x
+- Adds support for Python 3.15 and drops support for Python 3.10.
+
+**Full Changelog**: https://github.com/f0uriest/orthax/compare/v0.2.10...v0.2.11
+
+
 0.2.10
 ------
 - `generate_recurrence` is more accurate and has an error estimate:
@@ -21,7 +29,7 @@ included in the type hints since converting them can be a silent performance cos
 - Bumps maximum jax version to 0.11 and maximum numpy version to 2.5.
 - Bumps minimum jax version to 0.5.0 and minimum numpy version to 1.25.0.
 
-**Full Changelog**: https://github.com/f0uriest/orthax/compare/v0.2.9...main
+**Full Changelog**: https://github.com/f0uriest/orthax/compare/v0.2.9...v0.2.10
 
 
 v0.2.9
