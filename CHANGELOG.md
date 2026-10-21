@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.2.11
+------
+- Bumps maximum jax version to 0.12.
+- Drops support for Python 3.10 and adds support for Python 3.15.
+
+
 0.2.10
 ------
 - `generate_recurrence` is more accurate and has an error estimate:
