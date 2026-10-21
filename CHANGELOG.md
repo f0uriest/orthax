@@ -4,7 +4,7 @@ Changelog
 0.2.11
 ------
 - Bumps maximum jax version to 0.12.x
-- Adds support for Python 3.15 and drops support for Python 3.10.
+- Drops support for Python 3.10 and adds support for Python 3.15.
 
 **Full Changelog**: https://github.com/f0uriest/orthax/compare/v0.2.10...v0.2.11
 
