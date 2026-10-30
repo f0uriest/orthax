@@ -207,9 +207,9 @@ html_theme_options = {
     "style_external_links": False,
     "style_nav_header_background": "#3c4142",
     # Toc options
-    "collapse_navigation": True,
+    "collapse_navigation": False,
     "sticky_navigation": True,
-    "navigation_depth": 2,
+    "navigation_depth": 3,
     "includehidden": True,
     "titles_only": False,
 }
@@ -222,12 +222,12 @@ html_css_files = ["custom.css"]
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-# html_logo = "_static/images/logo_small_clear.png"
+html_logo = "_static/images/logo.svg"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-# html_favicon = "_static/images/desc_icon.ico"
+html_favicon = "_static/images/logo_icon.png"
 
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,

@@ -19,3 +19,47 @@
   }
 
 }
+
+/* Sidebar navigation: the whole tree is always expanded, so every level uses the same
+   light-on-purple styling and only the link for the current location is highlighted.
+   !important is needed to beat the theme's more specific rules for "current" items. */
+.wy-menu-vertical li ul {
+  display: block !important;
+}
+.wy-menu-vertical li button.toctree-expand {
+  display: none !important;
+}
+.wy-menu-vertical li,
+.wy-menu-vertical li.current {
+  background: transparent !important;
+}
+.wy-menu-vertical li a,
+.wy-menu-vertical li.current a,
+.wy-menu-vertical li.current > a {
+  color: #e8dcf5 !important;
+  background: transparent !important;
+  border: none !important;
+  border-left: 3px solid transparent !important;
+  font-weight: 400 !important;
+}
+.wy-menu-vertical li.toctree-l1 > a {
+  padding-left: 1.618em !important;
+  font-weight: 700 !important;
+}
+.wy-menu-vertical li.toctree-l2 > a {
+  padding-left: 2.618em !important;
+}
+.wy-menu-vertical li.toctree-l3 > a {
+  padding-left: 3.618em !important;
+}
+.wy-menu-vertical li a:hover,
+.wy-menu-vertical li.current a:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.wy-menu-vertical li a.current,
+.wy-menu-vertical li a.current:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-left-color: #e0a100 !important;
+  font-weight: 700 !important;
+}
