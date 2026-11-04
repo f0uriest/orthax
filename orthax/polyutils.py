@@ -588,7 +588,8 @@ def _div(
             y = jnp.roll(y, -1)
             return quo, rem, y, ridx
 
-        quo, rem, _, _ = jax.lax.fori_loop(0, sz, body, (quo, rem, y, ridx))
+        # one step for each quotient coefficient, i = sz, ..., 0
+        quo, rem, _, _ = jax.lax.fori_loop(0, sz + 1, body, (quo, rem, y, ridx))
         return quo, rem
 
 
