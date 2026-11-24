@@ -1,6 +1,23 @@
 Changelog
 =========
 
+0.2.12
+------
+- Fixes `*div` functions (`polydiv`, `chebdiv`, `legdiv`, `lagdiv`, `hermdiv`,
+`hermediv`, `orthdiv`), which skipped the last step of the long division. The constant
+term of the quotient was always zero, and dividing series of equal length returned the
+dividend unchanged as the remainder.
+- Improves accuracy of the remainder from `lagdiv`, `hermdiv`, and `hermediv` when the
+quotient is short compared to the divisor, which previously lost many digits for high
+degree series.
+- The last coefficient of the divisor passed to `*div` must be nonzero, otherwise the
+outputs are NaN.
+- Fixes `orthmul` raising an error when the shorter series has trailing zeros and only
+its first coefficient is nonzero.
+
+**Full Changelog**: https://github.com/f0uriest/orthax/compare/v0.2.11...v0.2.12
+
+
 0.2.11
 ------
 - Bumps maximum jax version to 0.12.x

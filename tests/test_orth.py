@@ -91,6 +91,23 @@ def test_orthdiv(name):
             assert_allclose(r1, r2)
 
 
+@pytest.mark.parametrize("name", names + ["poly"])
+def test_div_matches_numpy(name):
+    # the outputs are padded with zeros where numpy trims them
+    mod = orthax.polynomial if name == "poly" else name_map[name][1]
+    np_mod = getattr(np.polynomial, mod.__name__.split(".")[-1])
+    rng = np.random.default_rng(0)
+    for n1 in [1, 2, 3, 5, 10]:
+        for n2 in range(1, n1 + 1):
+            c1 = rng.standard_normal(n1)
+            c2 = rng.standard_normal(n2)
+            q1, r1 = getattr(mod, name + "div")(c1, c2)
+            q2, r2 = getattr(np_mod, name + "div")(c1, c2)
+            assert_allclose(q1, q2, atol=1e-12)
+            assert_allclose(r1[: len(r2)], r2, atol=1e-12)
+            assert_allclose(r1[len(r2) :], 0, atol=1e-12)
+
+
 @pytest.mark.parametrize("name", names)
 def test_orthmulx(name):
     rec, mod = name_map[name]
