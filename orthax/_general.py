@@ -437,7 +437,9 @@ def orthmul(
 
     r1, r2, u = jax.lax.fori_loop(2, m + 1, bodyfun, (r1, r2, u))
 
-    ri = tridiagmv(a - rec.a(gi - 1), c, b, r1) - rec.b(gi - 1) * r2
+    # this term is scaled by g[-1], so it only contributes when g has no trailing
+    # zeros, in which case gi == m
+    ri = tridiagmv(a - rec.a(m - 1), c, b, r1) - rec.b(m - 1) * r2
     u += g[-1] * ri
     u = jnp.append(u, 0.0)
     u = u.at[fi + gi].set(1.0)
@@ -469,6 +471,7 @@ def orthdiv(
     c1, c2 : array_like
         1-D arrays of orthogonal series coefficients ordered from low to
         high.
+        The last coefficient of `c2` must be nonzero, otherwise the outputs are NaN.
     rec : AbstractRecurrenceRelation
         Recurrence relation for the family of orthogonal polynomials.
 

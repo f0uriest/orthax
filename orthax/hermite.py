@@ -555,6 +555,7 @@ def hermdiv(c1: ArrayLike, c2: ArrayLike) -> tuple[jax.Array, jax.Array]:
     c1, c2 : array_like
         1-D arrays of Hermite series coefficients ordered from low to
         high.
+        The last coefficient of `c2` must be nonzero, otherwise the outputs are NaN.
 
     Returns
     -------
