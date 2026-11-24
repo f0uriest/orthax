@@ -574,7 +574,16 @@ def _div(
         rem = c1
         ridx = len(rem) - 1
         sz = lc1 - _ldordidx(c2) - 1
-        y = jnp.zeros(lc1 + lc2 + 1, dtype=c1.dtype).at[sz].set(1.0)
+        # y spans the quotient, which has lc1 - lc2 + 1 terms when the last coefficient
+        # of c2 is nonzero. Keeping y that short lets mul_f iterate its recurrence over
+        # y rather than over the dense c2 when the quotient is short compared to c2.
+        # Iterating over a dense series loses precision through cancellation in bases
+        # whose recurrence coefficients grow with degree.
+        # If c2 has trailing zeros, the true quotient has more terms than the static
+        # output shape allows, so no correct result is possible. sz then indexes past
+        # the end of y, the write is dropped, and the division by zero below produces
+        # NaN rather than a silently truncated quotient.
+        y = jnp.zeros(lc1 - lc2 + 1, dtype=c1.dtype).at[sz].set(1.0)
 
         def body(k, val):
             quo, rem, y, ridx = val
@@ -588,7 +597,8 @@ def _div(
             y = jnp.roll(y, -1)
             return quo, rem, y, ridx
 
-        quo, rem, _, _ = jax.lax.fori_loop(0, sz, body, (quo, rem, y, ridx))
+        # one step for each quotient coefficient, i = sz, ..., 0
+        quo, rem, _, _ = jax.lax.fori_loop(0, sz + 1, body, (quo, rem, y, ridx))
         return quo, rem
 
 
